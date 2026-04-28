@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "rlhf-compact-llm: An end-to-end RLHF pipeline for compact open-source LLMs"
+type: software
+authors:
+  - family-names: Tseng
+    given-names: Yu-Hsuan
+repository-code: "https://github.com/jujuliaa12/rlhf-compact-llm"
+url: "https://github.com/jujuliaa12/rlhf-compact-llm"
+abstract: >-
+  An end-to-end Reinforcement Learning from Human Feedback (RLHF) pipeline
+  built on Hugging Face TRL, targeting compact open-source language models
+  such as Qwen2.5-0.5B and SmolLM2-1.7B. Covers supervised fine-tuning,
+  reward modeling on Anthropic HH-RLHF, PPO-based alignment, and an
+  evaluation harness for studying reward hacking and verbosity bias at
+  sub-1B scale.
+keywords:
+  - rlhf
+  - llm
+  - ppo
+  - reward-modeling
+  - lora
+  - alignment
+  - qwen
+license: MIT
+version: 0.1.0
+date-released: "2026-04-29"
