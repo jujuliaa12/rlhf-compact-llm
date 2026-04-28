@@ -1,0 +1,64 @@
+# =============================================================================
+# DPO Configuration — Direct Preference Optimization for Qwen2.5-0.5B
+# =============================================================================
+# DPO trains the policy directly on (prompt, chosen, rejected) triples without
+# a separate reward model or PPO rollout. Compared to PPO it is:
+#   - much more stable (no value head, no KL controller, no rollout buffer)
+#   - much cheaper (no online generation during training)
+#   - typically 2-10× faster wall-clock at this scale
+# It is the canonical compact-LLM RLHF baseline as of 2025+.
+#
+# Targets trl==0.9.6 (matches the pinned PPO stack).
+
+base_config: "configs/base.yaml"
+
+# SFT policy (initial weights). DPO continues from the SFT adapter.
+sft_model:
+  path: "outputs/models/sft_qwen"
+  base_model: "Qwen/Qwen2.5-0.5B"
+
+# LoRA — a fresh adapter is trained on top of the SFT base
+lora:
+  r: 8
+  alpha: 16
+  dropout: 0.05
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
+
+# DPO hyperparameters
+dpo:
+  output_dir: "outputs/models/dpo_qwen"
+  beta: 0.1                # Lower beta = looser KL constraint, more deviation from ref
+  loss_type: "sigmoid"     # Original DPO loss; alternatives: "hinge", "ipo", "kto_pair"
+  max_length: 512
+  max_prompt_length: 256
+  reference_free: false    # Use the SFT model (LoRA-disabled) as reference
+
+# Training arguments (passed to TrainingArguments)
+training:
+  num_train_epochs: 1
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 8
+  learning_rate: 5.0e-5
+  weight_decay: 0.0
+  warmup_ratio: 0.1
+  lr_scheduler_type: "cosine"
+  logging_steps: 25
+  save_steps: 500
+  save_total_limit: 1
+  bf16: true               # Auto-disabled on CPU
+  fp16: false
+  gradient_checkpointing: true
+  report_to: "none"
+  remove_unused_columns: false   # DPO needs the prompt/chosen/rejected columns
+
+# Dataset
+dataset:
+  name: "Anthropic/hh-rlhf"
+  split_train: "train"
+  max_train_samples: 5000
+  max_prompt_length: 256
+
+# Logging
+logging:
+  csv_log_path: "outputs/logs/dpo_training_log.csv"
+  config_snapshot_path: "outputs/logs/dpo_config_snapshot.yaml"
