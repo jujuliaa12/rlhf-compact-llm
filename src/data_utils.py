@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import yaml
 from datasets import Dataset, DatasetDict, load_dataset
@@ -26,7 +25,7 @@ def load_yaml_config(config_path: str | Path) -> dict:
     config_path = Path(config_path)
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
-    with open(config_path, "r", encoding="utf-8") as f:
+    with open(config_path, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -98,8 +97,8 @@ def apply_debug_overrides(cfg: dict) -> dict:
 
 def load_hh_rlhf(
     split: str = "train",
-    max_samples: Optional[int] = None,
-    cache_dir: Optional[str] = None,
+    max_samples: int | None = None,
+    cache_dir: str | None = None,
 ) -> Dataset:
     """
     Load Anthropic HH-RLHF dataset.
@@ -117,8 +116,8 @@ def load_hh_rlhf(
 
 def load_ultrafeedback(
     split: str = "train_prefs",
-    max_samples: Optional[int] = None,
-    cache_dir: Optional[str] = None,
+    max_samples: int | None = None,
+    cache_dir: str | None = None,
 ) -> Dataset:
     """
     Load UltraFeedback binarized dataset.

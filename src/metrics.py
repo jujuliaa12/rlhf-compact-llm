@@ -8,11 +8,9 @@ for reward model evaluation and overall pipeline assessment.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import accuracy_score, classification_report
 
 logger = logging.getLogger(__name__)
 

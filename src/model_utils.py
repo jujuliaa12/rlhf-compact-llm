@@ -9,15 +9,14 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import torch
 from peft import (
     LoraConfig,
     PeftModel,
+    TaskType,
     get_peft_model,
     prepare_model_for_kbit_training,
-    TaskType,
 )
 from transformers import (
     AutoModelForCausalLM,
@@ -65,7 +64,7 @@ def get_dtype(cfg: dict) -> torch.dtype:
 
 def load_tokenizer(
     model_name: str,
-    max_seq_length: Optional[int] = None,
+    max_seq_length: int | None = None,
     padding_side: str = "right",
 ) -> PreTrainedTokenizer:
     """

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 import torch
@@ -124,8 +123,8 @@ def build_reward_training_args(cfg: dict) -> TrainingArguments:
 
 def run_reward_training(
     config_path: str | Path,
-    train_dataset: Optional[Dataset] = None,
-    val_dataset: Optional[Dataset] = None,
+    train_dataset: Dataset | None = None,
+    val_dataset: Dataset | None = None,
 ) -> dict:
     """
     Run reward model training from a config file.
@@ -178,8 +177,12 @@ def run_reward_training(
 
     # Load data if not provided
     if train_dataset is None:
-        from src.preprocessing import process_hh_rlhf_to_preference, clean_dataset, filter_empty_rows
         from src.data_utils import load_hh_rlhf
+        from src.preprocessing import (
+            clean_dataset,
+            filter_empty_rows,
+            process_hh_rlhf_to_preference,
+        )
 
         ds_cfg = cfg.get("dataset", {})
         raw = load_hh_rlhf(
@@ -191,8 +194,12 @@ def run_reward_training(
         train_dataset = filter_empty_rows(train_dataset)
 
     if val_dataset is None:
-        from src.preprocessing import process_hh_rlhf_to_preference, clean_dataset, filter_empty_rows
         from src.data_utils import load_hh_rlhf
+        from src.preprocessing import (
+            clean_dataset,
+            filter_empty_rows,
+            process_hh_rlhf_to_preference,
+        )
 
         ds_cfg = cfg.get("dataset", {})
         raw_val = load_hh_rlhf(

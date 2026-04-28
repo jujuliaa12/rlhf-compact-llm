@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 import torch
@@ -29,7 +28,7 @@ def generate_responses(
     top_k: int = 50,
     do_sample: bool = True,
     batch_size: int = 4,
-    prompt_template: Optional[str] = None,
+    prompt_template: str | None = None,
 ) -> list[str]:
     """
     Generate responses for a list of prompts.
@@ -104,7 +103,7 @@ def generate_comparison_table(
     prompts: list[str],
     models: dict[str, tuple[PreTrainedModel, PreTrainedTokenizer]],
     max_new_tokens: int = 128,
-    prompt_template: Optional[str] = None,
+    prompt_template: str | None = None,
     **gen_kwargs,
 ) -> pd.DataFrame:
     """
@@ -170,7 +169,7 @@ def load_samples(path: str | Path) -> pd.DataFrame:
     """Load previously saved samples."""
     path = Path(path)
     if path.suffix == ".json":
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         return pd.DataFrame(data)
     return pd.read_csv(path)

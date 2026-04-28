@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 from datasets import Dataset
@@ -79,8 +78,8 @@ def build_training_args(cfg: dict) -> TrainingArguments:
 
 def run_sft(
     config_path: str | Path,
-    train_dataset: Optional[Dataset] = None,
-    val_dataset: Optional[Dataset] = None,
+    train_dataset: Dataset | None = None,
+    val_dataset: Dataset | None = None,
 ) -> dict:
     """
     Run SFT training from a config file.
@@ -139,8 +138,8 @@ def run_sft(
 
     # Load data if not provided
     if train_dataset is None:
-        from src.preprocessing import prepare_sft_dataset, process_hh_rlhf_to_preference
         from src.data_utils import load_hh_rlhf
+        from src.preprocessing import prepare_sft_dataset, process_hh_rlhf_to_preference
 
         ds_cfg = cfg.get("dataset", {})
         raw = load_hh_rlhf(

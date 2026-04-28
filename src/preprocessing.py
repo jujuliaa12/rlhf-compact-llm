@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional
 
 import pandas as pd
 from datasets import Dataset
@@ -157,7 +156,7 @@ def process_hh_rlhf_to_preference(ds: Dataset) -> Dataset:
     records = []
     skipped_empty = 0
 
-    for idx, sample in enumerate(ds):
+    for _idx, sample in enumerate(ds):
         chosen_text = sample.get("chosen", "")
         rejected_text = sample.get("rejected", "")
 
@@ -299,7 +298,7 @@ def compute_length_stats(ds: Dataset) -> pd.DataFrame:
 
 
 def compute_token_length_stats(
-    ds: Dataset, tokenizer, fields: Optional[list[str]] = None
+    ds: Dataset, tokenizer, fields: list[str] | None = None
 ) -> pd.DataFrame:
     """
     Compute token-level length statistics using a tokenizer.
@@ -345,7 +344,7 @@ def get_length_series(ds: Dataset) -> pd.DataFrame:
 # SFT data preparation
 # ---------------------------------------------------------------------------
 
-def prepare_sft_dataset(ds: Dataset, prompt_template: Optional[str] = None) -> Dataset:
+def prepare_sft_dataset(ds: Dataset, prompt_template: str | None = None) -> Dataset:
     """
     Prepare a preference dataset for SFT by combining prompt + chosen response.
 

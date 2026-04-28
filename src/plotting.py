@@ -8,10 +8,8 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -41,7 +39,7 @@ def _ensure_dir(path: Path) -> None:
 def plot_training_loss(
     log_df: pd.DataFrame,
     title: str = "Training Loss",
-    output_path: Optional[str | Path] = None,
+    output_path: str | Path | None = None,
     loss_col: str = "loss",
     step_col: str = "step",
 ) -> None:
@@ -78,7 +76,7 @@ def plot_training_loss(
 def plot_eval_loss(
     log_df: pd.DataFrame,
     title: str = "Evaluation Loss",
-    output_path: Optional[str | Path] = None,
+    output_path: str | Path | None = None,
 ) -> None:
     """Plot evaluation loss curve."""
     df = log_df.dropna(subset=["eval_loss"])
@@ -109,7 +107,7 @@ def plot_eval_loss(
 def plot_reward_curve(
     ppo_log_df: pd.DataFrame,
     title: str = "PPO Mean Reward over Training",
-    output_path: Optional[str | Path] = None,
+    output_path: str | Path | None = None,
 ) -> None:
     """Plot mean reward curve from PPO training logs."""
     if "mean_reward" not in ppo_log_df.columns:
@@ -134,7 +132,7 @@ def plot_reward_curve(
 def plot_kl_divergence(
     ppo_log_df: pd.DataFrame,
     title: str = "PPO KL Divergence over Training",
-    output_path: Optional[str | Path] = None,
+    output_path: str | Path | None = None,
 ) -> None:
     """
     Plot KL divergence curve from PPO training.
@@ -170,7 +168,7 @@ def plot_kl_divergence(
 def plot_ppo_response_length(
     ppo_log_df: pd.DataFrame,
     title: str = "PPO Response Length over Training",
-    output_path: Optional[str | Path] = None,
+    output_path: str | Path | None = None,
 ) -> None:
     """Plot response length trend during PPO training."""
     if "response_length_mean" not in ppo_log_df.columns:
@@ -199,7 +197,7 @@ def plot_ppo_response_length(
 def plot_length_distribution(
     lengths_df: pd.DataFrame,
     title: str = "Response Length Distribution",
-    output_path: Optional[str | Path] = None,
+    output_path: str | Path | None = None,
 ) -> None:
     """
     Plot histograms of chosen vs rejected response lengths.
@@ -241,7 +239,7 @@ def plot_reward_score_distribution(
     chosen_scores: list[float],
     rejected_scores: list[float],
     title: str = "Reward Score Distribution",
-    output_path: Optional[str | Path] = None,
+    output_path: str | Path | None = None,
 ) -> None:
     """Plot histograms of reward scores for chosen vs rejected responses."""
     fig, ax = plt.subplots()
@@ -269,7 +267,7 @@ def plot_model_comparison_bar(
     summary_df: pd.DataFrame,
     metric_col: str,
     title: str = "Model Comparison",
-    output_path: Optional[str | Path] = None,
+    output_path: str | Path | None = None,
 ) -> None:
     """Plot a bar chart comparing a metric across models."""
     fig, ax = plt.subplots()
@@ -292,7 +290,7 @@ def plot_verbosity_comparison(
     sft_lengths: list[int],
     ppo_lengths: list[int],
     title: str = "Response Length: SFT vs PPO",
-    output_path: Optional[str | Path] = None,
+    output_path: str | Path | None = None,
 ) -> None:
     """Plot side-by-side length distributions for SFT vs PPO models."""
     fig, ax = plt.subplots()

@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 import torch
@@ -52,7 +51,7 @@ def prepare_ppo_prompts(
     ds: Dataset,
     tokenizer,
     max_prompt_length: int = 256,
-    max_samples: Optional[int] = None,
+    max_samples: int | None = None,
 ) -> list[dict]:
     """
     Prepare prompts for PPO generation.
@@ -82,7 +81,7 @@ def prepare_ppo_prompts(
 
 def run_ppo(
     config_path: str | Path,
-    prompt_dataset: Optional[Dataset] = None,
+    prompt_dataset: Dataset | None = None,
 ) -> dict:
     """
     Run PPO-based RLHF training.
@@ -103,7 +102,7 @@ def run_ppo(
     """
     # Import TRL PPO components — isolated here for version safety
     try:
-        from trl import PPOConfig, PPOTrainer, AutoModelForCausalLMWithValueHead
+        from trl import AutoModelForCausalLMWithValueHead, PPOConfig, PPOTrainer
     except ImportError as e:
         logger.error(
             "Failed to import TRL PPO components. Ensure trl==0.9.6 is installed. "

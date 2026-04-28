@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -83,7 +82,7 @@ def compute_win_rate(
 
 def evaluate_model_outputs(
     comparison_df: pd.DataFrame,
-    reward_scores: Optional[dict[str, list[float]]] = None,
+    reward_scores: dict[str, list[float]] | None = None,
 ) -> pd.DataFrame:
     """
     Evaluate model outputs from a comparison table.
@@ -127,8 +126,8 @@ def evaluate_model_outputs(
 def analyze_verbosity_bias(
     sft_responses: list[str],
     ppo_responses: list[str],
-    sft_scores: Optional[list[float]] = None,
-    ppo_scores: Optional[list[float]] = None,
+    sft_scores: list[float] | None = None,
+    ppo_scores: list[float] | None = None,
 ) -> dict:
     """
     Analyze verbosity bias between SFT and PPO models.
@@ -174,7 +173,7 @@ def analyze_verbosity_bias(
 
 def analyze_reward_hacking(
     ppo_log_df: pd.DataFrame,
-    ppo_responses: Optional[list[str]] = None,
+    ppo_responses: list[str] | None = None,
 ) -> dict:
     """
     Analyze indicators of reward hacking from PPO training logs.
