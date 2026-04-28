@@ -41,7 +41,7 @@ def main():
     )
     args = parser.parse_args()
 
-    from src.data_utils import load_full_config, apply_debug_overrides, set_seed
+    from src.data_utils import apply_debug_overrides, load_full_config, set_seed
     from src.ppo_train import run_ppo
 
     cfg = load_full_config(args.config)
@@ -54,7 +54,7 @@ def main():
     logger.info("Starting PPO training with config: %s", args.config)
     logger.info("Debug mode: %s", cfg.get("debug", False))
 
-    result = run_ppo(args.config)
+    run_ppo(args.config)
 
     logger.info("PPO training complete.")
     logger.info("Model saved to: %s", cfg.get("ppo", {}).get("output_dir", "outputs/models/ppo_qwen"))

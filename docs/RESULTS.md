@@ -110,10 +110,10 @@ This run only covers HH-RLHF. The pipeline ships a second config (`configs/rewar
 
 Listed in priority order; each item is a real experiment, not a polish task.
 
-1. **DPO baseline.** The natural comparison for PPO at compact scale. `trl.DPOTrainer` is a near drop-in. Expected outcome: DPO matches or beats PPO on reward at a fraction of the wall-clock and stability cost.
-2. **Cross-dataset comparison (Q2).** Re-run reward training on UltraFeedback and re-run PPO with the new RM. Compare RM accuracy, downstream behaviour, and length dynamics.
-3. **Comparison to `Qwen2.5-0.5B-Instruct`.** Without this, claims about RLHF effectiveness are unanchored.
-4. **Capability benchmarks (alignment tax).** MMLU and GSM8K on base / SFT / PPO. The trade-off between alignment and reasoning at sub-1B scale is under-documented.
+1. **DPO baseline.** ✅ *Pipeline shipped.* `scripts/run_dpo.py` + `configs/dpo_qwen.yaml` + `src/dpo_train.py` train a DPO LoRA adapter from the SFT initialisation in a single offline pass — no reward model, no rollout buffer. Run it (`python scripts/run_dpo.py --config configs/dpo_qwen.yaml`) and the SFT vs PPO vs DPO three-way comparison populates this section. Expected outcome at this scale: DPO matches or beats PPO on preference accuracy at a fraction of wall-clock and stability cost.
+2. **Capability benchmarks (alignment tax).** ✅ *Harness shipped.* `scripts/run_capability_eval.py` wraps `lm-evaluation-harness` and runs MMLU / GSM8K across any subset of {base, sft, rm, ppo, dpo}. Outputs land in `outputs/tables/capability_eval.csv`. Quantifying the alignment tax at sub-1B scale is genuinely under-reported — running the full benchmark fills that gap.
+3. **Cross-dataset comparison (Q2).** Re-run reward training on UltraFeedback (`configs/reward_alt.yaml`) and re-run PPO/DPO with the new RM / preference set. Compare RM accuracy, downstream behaviour, and length dynamics.
+4. **Comparison to `Qwen2.5-0.5B-Instruct`.** Without this, claims about RLHF effectiveness are unanchored. Drop the official model into the capability eval registry and re-run.
 5. **LLM-as-judge evaluation.** Pairwise win-rate from a stronger judge (GPT-4 / Claude class) on the eval set. Auto-metrics + judge wins is the modern standard.
 6. **Multi-seed runs + ablations.** KL coefficient (0.0, 0.05, 0.2), LoRA rank (4, 8, 16, 32), data scale (1k, 10k, all). One run is anecdote; three seeds × four ablations is data.
 7. **Controlled reward-hacking experiment.** Reproduce the rollout-length blowup by disabling KL, document the failure mode in detail.

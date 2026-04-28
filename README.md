@@ -7,12 +7,21 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/jujuliaa12/rlhf-compact-llm/actions/workflows/ci.yml/badge.svg)](https://github.com/jujuliaa12/rlhf-compact-llm/actions/workflows/ci.yml)
 [![HF Models](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-models-yellow)](https://huggingface.co/Julia569922)
+[![HF Space](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/Julia569922/rlhf-compact-llm-demo)
 
 An end-to-end **Reinforcement Learning from Human Feedback (RLHF)** pipeline implemented from scratch on top of Hugging Face TRL, designed to be reproducible on a single GPU (or CPU) using compact open-source language models.
 
-The repo covers the full alignment workflow — **SFT → Reward Modeling → PPO → Evaluation** — and ships with a smoke test, training logs, plots, and analysis utilities for studying *reward hacking* and *verbosity bias* in small models.
+The repo covers the full alignment workflow — **SFT → Reward Modeling → PPO / DPO → Evaluation (preference + capability)** — and ships with a smoke test, training logs, plots, and analysis utilities for studying *reward hacking* and *verbosity bias* in small models.
 
 > **TL;DR.** A complete RLHF run on Qwen2.5-0.5B with HH-RLHF: SFT cross-entropy drops from **2.54 → 2.10** (20% reduction), the reward model reaches **65.5% pairwise accuracy** on held-out preferences, and PPO produces a stable adapter — but mean reward over training **decreases** (2.24 → 1.93) while response length grows **+37% during rollouts**, a textbook reward-hacking signature that is analysed in [`docs/RESULTS.md`](docs/RESULTS.md).
+
+## Try it in the browser
+
+A live side-by-side demo (base vs SFT vs PPO vs DPO on the same prompt) is hosted as a Hugging Face Space:
+
+**👉 [`huggingface.co/spaces/Julia569922/rlhf-compact-llm-demo`](https://huggingface.co/spaces/Julia569922/rlhf-compact-llm-demo)**
+
+Source for the demo lives under [`space/`](space/) — it is a single `app.py` and the same file runs locally (`python space/app.py` after `pip install -e ".[demo]"`).
 
 ## Trained model adapters on Hugging Face
 
@@ -74,27 +83,30 @@ Both are small enough for a single consumer GPU. CPU-only execution is supported
 
 ```
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│  Base Model  │───▶│  SFT (LoRA)  │───▶│  SFT Policy  │
-└──────────────┘    └──────────────┘    └──────┬───────┘
-                                               │
-                    ┌──────────────┐           │
-                    │ Preferences  │           │
-                    │  (HH-RLHF)   │           │
-                    └──────┬───────┘           │
-                           │                   │
-                    ┌──────▼───────┐    ┌──────▼───────┐
-                    │ Reward Model │───▶│ PPO (TRL)    │
-                    └──────────────┘    └──────┬───────┘
-                                               │
-                                        ┌──────▼───────┐
-                                        │   Aligned    │
-                                        │    Policy    │
-                                        └──────┬───────┘
-                                               │
-                                        ┌──────▼───────┐
-                                        │  Evaluation  │
-                                        └──────────────┘
+│  Base Model  │───▶│  SFT (LoRA)  │───▶│  SFT Policy  │────────────┐
+└──────────────┘    └──────────────┘    └──────┬───────┘            │
+                                               │                    │
+                    ┌──────────────┐           │                    │
+                    │ Preferences  │           │                    │
+                    │  (HH-RLHF)   │           │                    │
+                    └──────┬───────┘           │                    │
+                           │                   │                    │
+        ┌──────────────────┼───────────────────┘                    │
+        │                  │                                        │
+        ▼                  ▼                                        ▼
+┌───────────────┐   ┌──────────────┐                       ┌────────────────┐
+│ Reward Model  │──▶│ PPO  (TRL)   │ ─── aligned policy ──▶│   Evaluation   │
+└───────────────┘   └──────────────┘                       │  (preference   │
+                                                           │   + capability │
+        ┌──────────────────────────────┐                   │   benchmarks)  │
+        │       DPO  (TRL)             │ ─── aligned ─────▶│                │
+        │  no RM, no rollout buffer    │     policy        └────────────────┘
+        └──────────────────────────────┘
 ```
+
+**Two alignment paths are first-class:**
+- **PPO** (`scripts/run_ppo.py`) — online, uses a learned reward model + KL controller. Reproduces classic OpenAI-style RLHF.
+- **DPO** (`scripts/run_dpo.py`) — offline, uses preference triples directly via a closed-form loss. The modern compact-model default.
 
 ## Results (Qwen2.5-0.5B, HH-RLHF, single run)
 
@@ -245,17 +257,40 @@ python scripts/run_reward.py --config configs/reward_hh.yaml
 python scripts/run_reward.py --config configs/reward_alt.yaml
 ```
 
-### 4. PPO
+### 4a. PPO (online RLHF)
 
 ```bash
 python scripts/run_ppo.py --config configs/ppo_qwen.yaml
 ```
 
-### 5. Evaluation
+### 4b. DPO (offline preference optimization, recommended for compact models)
+
+```bash
+python scripts/run_dpo.py --config configs/dpo_qwen.yaml
+```
+
+DPO is the modern alternative to PPO at this scale: no separate reward model, no online generation, dramatically more stable training, and typically 2–10× faster wall-clock for the same preference signal. The output adapter lands at `outputs/models/dpo_qwen/`.
+
+### 5. Preference-based evaluation
 
 ```bash
 python scripts/run_evaluation.py --config configs/base.yaml
 ```
+
+### 5b. Capability evaluation (alignment-tax measurement)
+
+Quantifies how much knowledge / reasoning ability is lost during alignment. Wraps `lm-evaluation-harness`:
+
+```bash
+pip install -e ".[eval]"
+python scripts/run_capability_eval.py \
+    --models base,sft,ppo,dpo \
+    --tasks mmlu,gsm8k \
+    --num-fewshot 5 \
+    --limit 200          # remove for full benchmarks
+```
+
+Results land at `outputs/tables/capability_eval.csv` plus a per-run JSON dump under `outputs/logs/capability_eval/`.
 
 ### 6. Human evaluation (optional)
 

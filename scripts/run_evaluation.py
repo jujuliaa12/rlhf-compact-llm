@@ -13,7 +13,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 import os
 import sys
@@ -46,21 +45,20 @@ def main():
     )
     args = parser.parse_args()
 
-    import torch
     import pandas as pd
+    import torch
     from datasets import load_dataset
-    from src.data_utils import load_yaml_config, load_dataset_from_disk, set_seed
-    from src.model_utils import load_causal_lm, load_tokenizer, load_peft_model
-    from src.inference import generate_responses, save_samples, load_samples
-    from src.reward_train import compute_reward_scores
+
+    from src.data_utils import load_dataset_from_disk, load_yaml_config, set_seed
     from src.evaluation import (
-        evaluate_model_outputs,
-        analyze_verbosity_bias,
         analyze_reward_hacking,
+        analyze_verbosity_bias,
         compute_win_rate,
-        save_evaluation_summary,
+        evaluate_model_outputs,
     )
-    from src.metrics import compute_diversity_metrics
+    from src.inference import generate_responses, load_samples, save_samples
+    from src.model_utils import load_causal_lm, load_peft_model, load_tokenizer
+    from src.reward_train import compute_reward_scores
 
     cfg = load_yaml_config(args.config)
     set_seed(cfg.get("seed", 42))

@@ -123,15 +123,14 @@ def stage_1_preprocessing():
     _banner("STAGE 1: Data Preprocessing")
     t0 = time.time()
 
-    from src.data_utils import load_hh_rlhf, set_seed, save_dataset_to_disk
+    from src.data_utils import load_hh_rlhf, save_dataset_to_disk, set_seed
     from src.preprocessing import (
-        process_hh_rlhf_to_preference,
         clean_dataset,
-        filter_empty_rows,
-        prepare_sft_dataset,
-        split_dataset,
         compute_length_stats,
         debug_hh_parse,
+        filter_empty_rows,
+        prepare_sft_dataset,
+        process_hh_rlhf_to_preference,
     )
 
     set_seed(42)
@@ -209,11 +208,11 @@ def stage_2_sft(sft_train_ds, model_name: str, device: str):
     t0 = time.time()
 
     import torch
+    from peft import LoraConfig, TaskType
     from transformers import TrainingArguments
     from trl import SFTTrainer
-    from peft import LoraConfig, TaskType
 
-    from src.model_utils import load_causal_lm, load_tokenizer, apply_lora
+    from src.model_utils import apply_lora, load_causal_lm, load_tokenizer
     from src.sft_train import save_training_log
 
     cfg = _base_cfg(device)
@@ -318,15 +317,15 @@ def stage_3_reward(pref_train, pref_val, model_name: str, device: str):
     _banner("STAGE 3: Reward Model Training")
     t0 = time.time()
 
-    import torch
     import pandas as pd
+    import torch
+    from peft import LoraConfig, TaskType
     from transformers import TrainingArguments
     from trl import RewardTrainer
-    from peft import LoraConfig, TaskType
 
-    from src.model_utils import load_reward_model, load_tokenizer, apply_lora
-    from src.reward_train import prepare_reward_dataset, compute_reward_scores
     from src.metrics import pairwise_preference_accuracy
+    from src.model_utils import apply_lora, load_reward_model, load_tokenizer
+    from src.reward_train import compute_reward_scores, prepare_reward_dataset
 
     cfg = _base_cfg(device)
 
@@ -473,13 +472,13 @@ def stage_4_ppo(pref_train, sft_model_dir: Path, reward_model, rm_tokenizer,
     _banner("STAGE 4: PPO Training")
     t0 = time.time()
 
-    import torch
     import pandas as pd
+    import torch
 
     # --- TRL PPO imports (version-sensitive) ---
     try:
-        from trl import PPOConfig, PPOTrainer, AutoModelForCausalLMWithValueHead
         import trl
+        from trl import AutoModelForCausalLMWithValueHead, PPOConfig, PPOTrainer
         logger.info("TRL version: %s", trl.__version__)
     except ImportError as e:
         logger.error(
@@ -488,8 +487,8 @@ def stage_4_ppo(pref_train, sft_model_dir: Path, reward_model, rm_tokenizer,
         raise
 
     from src.model_utils import load_tokenizer
-    from src.reward_train import compute_reward_scores
     from src.ppo_train import PPOLogger
+    from src.reward_train import compute_reward_scores
 
     tokenizer = load_tokenizer(model_name)
 

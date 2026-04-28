@@ -38,7 +38,7 @@ def main():
     )
     args = parser.parse_args()
 
-    from src.data_utils import load_full_config, apply_debug_overrides, set_seed
+    from src.data_utils import apply_debug_overrides, load_full_config, set_seed
     from src.sft_train import run_sft
 
     # Load config and optionally force debug mode
@@ -52,7 +52,7 @@ def main():
     logger.info("Starting SFT training with config: %s", args.config)
     logger.info("Debug mode: %s", cfg.get("debug", False))
 
-    result = run_sft(args.config)
+    run_sft(args.config)
 
     logger.info("SFT training complete.")
     logger.info("Model saved to: %s", cfg.get("training", {}).get("output_dir"))

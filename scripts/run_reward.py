@@ -38,7 +38,7 @@ def main():
     )
     args = parser.parse_args()
 
-    from src.data_utils import load_full_config, apply_debug_overrides, set_seed
+    from src.data_utils import apply_debug_overrides, load_full_config, set_seed
     from src.reward_train import run_reward_training
 
     cfg = load_full_config(args.config)
@@ -51,7 +51,7 @@ def main():
     logger.info("Starting reward model training with config: %s", args.config)
     logger.info("Debug mode: %s", cfg.get("debug", False))
 
-    result = run_reward_training(args.config)
+    run_reward_training(args.config)
 
     logger.info("Reward model training complete.")
     logger.info("Model saved to: %s", cfg.get("training", {}).get("output_dir"))

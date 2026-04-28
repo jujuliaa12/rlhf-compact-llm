@@ -6,11 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- **DPO baseline.** `src/dpo_train.py` + `scripts/run_dpo.py` + `configs/dpo_qwen.yaml` train a Direct Preference Optimization adapter directly from preference triples — no reward model, no rollout buffer. Drop-in alternative to PPO.
+- **Capability evaluation harness.** `scripts/run_capability_eval.py` wraps `lm-evaluation-harness` to run MMLU / GSM8K across any subset of {base, sft, ppo, dpo}, producing an "alignment tax" comparison table.
+- **HF Space demo.** `space/app.py` is a Gradio side-by-side chat that loads the SFT / PPO / DPO adapters from the Hub and runs them on the same prompt. Hosted at [`Julia569922/rlhf-compact-llm-demo`](https://huggingface.co/spaces/Julia569922/rlhf-compact-llm-demo).
+- pyproject extras: `[eval]` (lm-eval) and `[demo]` (gradio).
+
 ### Planned
-- DPO baseline alongside PPO
 - Cross-dataset reward-model comparison (HH-RLHF vs UltraFeedback)
 - LLM-as-judge evaluation harness
-- Capability benchmarks (MMLU, GSM8K) on base / SFT / PPO
+- Multi-seed runs + KL / rank / data-scale ablations
+- Controlled reward-hacking experiment with KL disabled
 
 ## [0.1.0] - 2026-04-29
 
