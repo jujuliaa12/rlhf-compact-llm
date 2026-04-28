@@ -14,7 +14,10 @@ Compared to PPO, DPO:
 This module is intentionally parallel to ``src.ppo_train``: same config style,
 same logging targets, same LoRA-on-SFT-base flow.
 
-Targets ``trl==0.9.6``.
+Compatibility: works with TRL ≥ 0.10 (`DPOConfig` API). On older TRL (0.9.x)
+the trainer accepted ``beta`` / ``loss_type`` / ``max_length`` directly as
+DPOTrainer kwargs and a plain ``TrainingArguments``; this module falls back
+to that path automatically when ``DPOConfig`` is not importable.
 """
 
 from __future__ import annotations
@@ -24,7 +27,6 @@ from pathlib import Path
 
 import pandas as pd
 from datasets import Dataset
-from transformers import TrainingArguments
 
 from src.data_utils import apply_debug_overrides, load_full_config, set_seed
 from src.model_utils import build_lora_config, load_causal_lm, load_tokenizer
@@ -32,8 +34,17 @@ from src.model_utils import build_lora_config, load_causal_lm, load_tokenizer
 logger = logging.getLogger(__name__)
 
 
-def build_training_args(cfg: dict) -> TrainingArguments:
-    """Build HuggingFace TrainingArguments from the DPO config dict."""
+def _has_dpo_config() -> bool:
+    """True if the installed TRL exposes ``DPOConfig`` (TRL ≥ 0.10)."""
+    try:
+        from trl import DPOConfig  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def _common_training_kwargs(cfg: dict) -> dict:
+    """Standard HF-Trainer kwargs derived from the YAML config."""
     import torch
 
     tr = cfg.get("training", {})
@@ -69,7 +80,41 @@ def build_training_args(cfg: dict) -> TrainingArguments:
     if use_grad_ckpt:
         kwargs["gradient_checkpointing_kwargs"] = {"use_reentrant": False}
 
-    return TrainingArguments(**kwargs)
+    return kwargs
+
+
+def build_training_args(cfg: dict):
+    """
+    Build the trainer argument object.
+
+    Returns ``DPOConfig`` on TRL ≥ 0.10 (DPO-specific kwargs go inside the
+    config), or plain ``TrainingArguments`` on older TRL (DPO-specific kwargs
+    flow into the trainer constructor instead).
+    """
+    common = _common_training_kwargs(cfg)
+    dpo_cfg = cfg.get("dpo", {})
+
+    if _has_dpo_config():
+        from trl import DPOConfig
+
+        # In TRL ≥ 0.10 these live on DPOConfig and the trainer no longer
+        # accepts them positionally.
+        common.update(
+            beta=dpo_cfg.get("beta", 0.1),
+            loss_type=dpo_cfg.get("loss_type", "sigmoid"),
+            max_length=dpo_cfg.get("max_length", 512),
+            max_prompt_length=dpo_cfg.get("max_prompt_length", 256),
+        )
+        # ``reference_free`` is a config-level field on newer TRL but the
+        # field name has shifted between minor versions; only set it if
+        # supported by the installed DPOConfig signature.
+        try:
+            return DPOConfig(reference_free=dpo_cfg.get("reference_free", False), **common)
+        except TypeError:
+            return DPOConfig(**common)
+    else:
+        from transformers import TrainingArguments
+        return TrainingArguments(**common)
 
 
 def load_preference_dataset(cfg: dict) -> Dataset:
@@ -83,6 +128,38 @@ def load_preference_dataset(cfg: dict) -> Dataset:
         max_samples=ds_cfg.get("max_train_samples"),
     )
     return process_hh_rlhf_to_preference(raw)
+
+
+def _build_trainer(policy, args, train_dataset, tokenizer, lora_config, cfg):
+    """Construct the DPOTrainer with the right kwargs for the installed TRL version."""
+    from trl import DPOTrainer
+
+    dpo_cfg = cfg.get("dpo", {})
+
+    base_kwargs = dict(
+        model=policy,
+        ref_model=None,  # PEFT path: ref is the LoRA-disabled base
+        args=args,
+        train_dataset=train_dataset,
+        peft_config=lora_config,
+    )
+    # Some TRL versions take `tokenizer`, others (newer) prefer `processing_class`.
+    base_kwargs["tokenizer"] = tokenizer
+
+    if _has_dpo_config():
+        # New API: beta / loss_type / max_length live on DPOConfig (already
+        # set by build_training_args). Don't pass them again.
+        return DPOTrainer(**base_kwargs)
+
+    # Old API (TRL 0.9.x): DPO-specific kwargs go to the trainer.
+    return DPOTrainer(
+        **base_kwargs,
+        beta=dpo_cfg.get("beta", 0.1),
+        loss_type=dpo_cfg.get("loss_type", "sigmoid"),
+        max_length=dpo_cfg.get("max_length", 512),
+        max_prompt_length=dpo_cfg.get("max_prompt_length", 256),
+        reference_free=dpo_cfg.get("reference_free", False),
+    )
 
 
 def run_dpo(
@@ -102,7 +179,6 @@ def run_dpo(
     """
     import torch
     from peft import PeftModel
-    from trl import DPOTrainer
 
     cfg = load_full_config(config_path)
     cfg = apply_debug_overrides(cfg)
@@ -149,26 +225,12 @@ def run_dpo(
     logger.info("DPO training set: %d preference triples", len(train_dataset))
 
     training_args = build_training_args(cfg)
-    dpo_cfg = cfg.get("dpo", {})
-
-    trainer = DPOTrainer(
-        model=policy,
-        ref_model=None,  # PEFT path: ref is the LoRA-disabled base
-        args=training_args,
-        beta=dpo_cfg.get("beta", 0.1),
-        loss_type=dpo_cfg.get("loss_type", "sigmoid"),
-        train_dataset=train_dataset,
-        tokenizer=tokenizer,
-        max_length=dpo_cfg.get("max_length", 512),
-        max_prompt_length=dpo_cfg.get("max_prompt_length", 256),
-        peft_config=lora_config,
-        reference_free=dpo_cfg.get("reference_free", False),
-    )
+    trainer = _build_trainer(policy, training_args, train_dataset, tokenizer, lora_config, cfg)
 
     logger.info("Starting DPO training...")
     trainer.train()
 
-    output_dir = dpo_cfg.get("output_dir", "outputs/models/dpo_qwen")
+    output_dir = cfg.get("dpo", {}).get("output_dir", "outputs/models/dpo_qwen")
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     trainer.save_model(output_dir)
     tokenizer.save_pretrained(output_dir)
