@@ -1,0 +1,52 @@
+# =============================================================================
+# SFT Configuration — Supervised Fine-Tuning for Qwen2.5-0.5B
+# =============================================================================
+
+# Inherits from base.yaml (loaded programmatically)
+base_config: "configs/base.yaml"
+
+# Model
+model:
+  name: "Qwen/Qwen2.5-0.5B"
+  max_seq_length: 512
+
+# LoRA configuration (overrides base if needed)
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: ["q_proj", "v_proj"]
+
+# Dataset
+dataset:
+  name: "Anthropic/hh-rlhf"
+  split_train: "train"
+  max_train_samples: 10000    # Limit for feasibility; set null for full
+  max_val_samples: 1000
+
+# Training hyperparameters
+training:
+  output_dir: "outputs/models/sft_qwen"
+  num_train_epochs: 2
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 2.0e-4
+  weight_decay: 0.01
+  warmup_ratio: 0.05
+  lr_scheduler_type: "cosine"
+  logging_steps: 50
+  save_steps: 500
+  do_eval: false
+  evaluation_strategy: "no"
+  load_best_model_at_end: false
+  save_total_limit: 1
+  fp16: false
+  bf16: true
+  gradient_checkpointing: true
+  report_to: "none"           # Set to "wandb" if using W&B
+
+# Logging
+logging:
+  csv_log_path: "outputs/logs/sft_training_log.csv"
+  config_snapshot_path: "outputs/logs/sft_config_snapshot.yaml"

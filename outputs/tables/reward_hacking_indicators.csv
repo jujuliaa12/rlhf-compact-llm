@@ -1,0 +1,2 @@
+reward_start,reward_end,reward_increase,reward_monotonic_pct,length_start,length_end,length_increase_pct,kl_max,kl_mean,kl_final
+2.239013671875,1.93017578125,-0.308837890625,0.5510204081632653,530.875,726.5,36.849540852366374,18.66050720214844,12.42384656906128,10.06070613861084

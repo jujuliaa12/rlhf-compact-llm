@@ -1,0 +1,74 @@
+dataset:
+  max_prompt_length: 256
+  max_samples: 5000
+  name: Anthropic/hh-rlhf
+  split: train
+datasets:
+  preference_primary: Anthropic/hh-rlhf
+  preference_secondary: HuggingFaceH4/ultrafeedback_binarized
+debug: false
+debug_max_eval_samples: 50
+debug_max_ppo_steps: 20
+debug_max_samples: 100
+debug_num_epochs: 1
+device: auto
+generation:
+  do_sample: true
+  max_new_tokens: 64
+  min_new_tokens: 16
+  temperature: 0.7
+  top_k: 50
+  top_p: 0.95
+logging:
+  config_snapshot_path: outputs/logs/ppo_config_snapshot.yaml
+  csv_log_path: outputs/logs/ppo_training_log.csv
+  log_every_n_steps: 10
+lora:
+  bias: none
+  lora_alpha: 32
+  lora_dropout: 0.05
+  r: 16
+  target_modules:
+  - q_proj
+  - v_proj
+  task_type: CAUSAL_LM
+models:
+  primary: Qwen/Qwen2.5-0.5B
+  secondary: HuggingFaceTB/SmolLM2-1.7B
+paths:
+  data_eval: data/eval
+  data_processed: data/processed
+  data_raw: data/raw
+  output_figures: outputs/figures
+  output_logs: outputs/logs
+  output_models: outputs/models
+  output_samples: outputs/samples
+  output_tables: outputs/tables
+  project_root: .
+ppo:
+  batch_size: 8
+  cliprange: 0.2
+  cliprange_value: 0.2
+  gamma: 1.0
+  gradient_accumulation_steps: 1
+  init_kl_coef: 0.2
+  lam: 0.95
+  learning_rate: 1.41e-05
+  max_grad_norm: 1.0
+  max_steps: 500
+  mini_batch_size: 2
+  output_dir: outputs/models/ppo_qwen
+  ppo_epochs: 4
+  target_kl: 6.0
+reward_model:
+  base_model: Qwen/Qwen2.5-0.5B
+  path: outputs/models/reward_model_hh
+seed: 42
+sft_model:
+  base_model: Qwen/Qwen2.5-0.5B
+  path: outputs/models/sft_qwen
+training:
+  bf16: true
+  dataloader_num_workers: 0
+  fp16: false
+  gradient_checkpointing: true

@@ -1,0 +1,64 @@
+dataset:
+  max_train_samples: 10000
+  max_val_samples: 1000
+  name: Anthropic/hh-rlhf
+  split_train: train
+datasets:
+  preference_primary: Anthropic/hh-rlhf
+  preference_secondary: HuggingFaceH4/ultrafeedback_binarized
+debug: false
+debug_max_eval_samples: 50
+debug_max_ppo_steps: 20
+debug_max_samples: 100
+debug_num_epochs: 1
+device: auto
+logging:
+  config_snapshot_path: outputs/logs/sft_config_snapshot.yaml
+  csv_log_path: outputs/logs/sft_training_log.csv
+lora:
+  bias: none
+  lora_alpha: 32
+  lora_dropout: 0.05
+  r: 16
+  target_modules:
+  - q_proj
+  - v_proj
+  task_type: CAUSAL_LM
+model:
+  max_seq_length: 512
+  name: Qwen/Qwen2.5-0.5B
+models:
+  primary: Qwen/Qwen2.5-0.5B
+  secondary: HuggingFaceTB/SmolLM2-1.7B
+paths:
+  data_eval: data/eval
+  data_processed: data/processed
+  data_raw: data/raw
+  output_figures: outputs/figures
+  output_logs: outputs/logs
+  output_models: outputs/models
+  output_samples: outputs/samples
+  output_tables: outputs/tables
+  project_root: .
+seed: 42
+training:
+  bf16: true
+  dataloader_num_workers: 0
+  do_eval: false
+  evaluation_strategy: 'no'
+  fp16: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: true
+  learning_rate: 0.0002
+  load_best_model_at_end: false
+  logging_steps: 50
+  lr_scheduler_type: cosine
+  num_train_epochs: 2
+  output_dir: outputs/models/sft_qwen
+  per_device_eval_batch_size: 4
+  per_device_train_batch_size: 4
+  report_to: none
+  save_steps: 500
+  save_total_limit: 1
+  warmup_ratio: 0.05
+  weight_decay: 0.01

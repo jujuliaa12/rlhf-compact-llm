@@ -1,0 +1,252 @@
+# RLHF for Compact Open-Source LLMs
+
+[![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/downloads/release/python-3100/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.1%2B-EE4C2C.svg)](https://pytorch.org/)
+[![Transformers](https://img.shields.io/badge/transformers-4.41-yellow.svg)](https://github.com/huggingface/transformers)
+[![TRL](https://img.shields.io/badge/trl-0.9.6-orange.svg)](https://github.com/huggingface/trl)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+An end-to-end **Reinforcement Learning from Human Feedback (RLHF)** pipeline implemented from scratch on top of Hugging Face TRL, designed to be reproducible on a single GPU (or CPU) using compact open-source language models.
+
+The repo covers the full alignment workflow — **SFT → Reward Modeling → PPO → Evaluation** — and ships with a smoke test, training logs, plots, and analysis utilities for studying *reward hacking* and *verbosity bias* in small models.
+
+---
+
+## Why this project
+
+Most public RLHF implementations target 7B+ models and require multi-GPU clusters. This project goes the other direction: **how well does the standard RLHF stack scale *down* to 0.5B–1.7B models on commodity hardware?** And what alignment failure modes appear at that scale?
+
+Concretely, the pipeline is built to investigate:
+
+- **Q1.** Does PPO-based RLHF improve response quality over an SFT-only baseline on compact LLMs?
+- **Q2.** How sensitive is the reward model — and the downstream policy — to the choice of preference dataset?
+- **Q3.** To what extent do compact models exhibit **reward hacking** or **verbosity bias** during PPO training?
+
+## Models
+
+| Model | Parameters | Hugging Face ID |
+|---|---|---|
+| Qwen2.5-0.5B | ~0.5B | `Qwen/Qwen2.5-0.5B` |
+| SmolLM2-1.7B | ~1.7B | `HuggingFaceTB/SmolLM2-1.7B` |
+
+Both are small enough for a single consumer GPU. CPU-only execution is supported (slow, but functional) for the 0.5B model.
+
+## Datasets
+
+| Dataset | Role | Source |
+|---|---|---|
+| Anthropic HH-RLHF | Primary preference dataset; *chosen* responses also reused as a lightweight SFT corpus | `Anthropic/hh-rlhf` |
+| UltraFeedback (binarized) | Alternative preference dataset for cross-dataset comparison | `HuggingFaceH4/ultrafeedback_binarized` |
+
+> **A note on SFT data.** HH-RLHF is a preference dataset, not an instruction-tuning corpus. Using its *chosen* responses for SFT keeps the pipeline self-contained on a single source, at the cost of a weaker SFT baseline than dedicated instruction sets (OpenAssistant, Alpaca) would yield. This is documented as a known limitation rather than hidden.
+
+## Pipeline
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│  Base Model  │───▶│  SFT (LoRA)  │───▶│  SFT Policy  │
+└──────────────┘    └──────────────┘    └──────┬───────┘
+                                               │
+                    ┌──────────────┐           │
+                    │ Preferences  │           │
+                    │  (HH-RLHF)   │           │
+                    └──────┬───────┘           │
+                           │                   │
+                    ┌──────▼───────┐    ┌──────▼───────┐
+                    │ Reward Model │───▶│ PPO (TRL)    │
+                    └──────────────┘    └──────┬───────┘
+                                               │
+                                        ┌──────▼───────┐
+                                        │   Aligned    │
+                                        │    Policy    │
+                                        └──────┬───────┘
+                                               │
+                                        ┌──────▼───────┐
+                                        │  Evaluation  │
+                                        └──────────────┘
+```
+
+## Repository layout
+
+```
+.
+├── README.md
+├── LICENSE
+├── requirements.txt
+├── configs/                # YAML configs for every stage
+│   ├── base.yaml
+│   ├── sft_qwen.yaml
+│   ├── reward_hh.yaml
+│   ├── reward_alt.yaml
+│   └── ppo_qwen.yaml
+├── notebooks/              # Stage-by-stage execution + analysis
+│   ├── 01_data_preparation.ipynb
+│   ├── 02_sft_baseline.ipynb
+│   ├── 03_reward_model.ipynb
+│   ├── 04_rlhf_ppo.ipynb
+│   ├── 05_evaluation.ipynb
+│   └── 06_human_eval_template.ipynb
+├── src/                    # Core library
+│   ├── data_utils.py       # dataset loading + caching
+│   ├── preprocessing.py    # text cleaning + format conversion
+│   ├── model_utils.py      # model/tokenizer + LoRA setup
+│   ├── sft_train.py        # SFT trainer
+│   ├── reward_train.py     # reward model trainer
+│   ├── ppo_train.py        # PPO trainer
+│   ├── inference.py        # generation utilities
+│   ├── evaluation.py       # eval pipelines
+│   ├── metrics.py          # metric functions
+│   └── plotting.py         # plot helpers
+├── scripts/                # CLI entry points
+│   ├── run_sft.py
+│   ├── run_reward.py
+│   ├── run_ppo.py
+│   ├── run_evaluation.py
+│   └── smoke_test.py       # 50-sample end-to-end smoke test
+├── data/                   # Not committed — regenerated by stage 01
+└── outputs/
+    ├── models/             # LoRA adapter checkpoints
+    ├── logs/               # CSV training logs + config snapshots
+    ├── figures/            # Loss / reward / KL curves
+    ├── tables/             # Eval summaries
+    └── samples/            # Generated text samples
+```
+
+## Setup
+
+```bash
+python -m venv .venv
+# Linux / macOS
+source .venv/bin/activate
+# Windows
+.venv\Scripts\activate
+
+pip install -r requirements.txt
+```
+
+Verify the install:
+
+```python
+import torch, transformers, trl, peft
+print(torch.__version__, transformers.__version__, trl.__version__, peft.__version__)
+print("CUDA:", torch.cuda.is_available())
+```
+
+## Running the pipeline
+
+### 0. Smoke test (recommended)
+
+Runs all four stages on ~50 samples to confirm the environment, in under a few minutes. Outputs go to `outputs/debug/` and never touch real experiment results.
+
+```bash
+python scripts/smoke_test.py            # run
+python scripts/smoke_test.py --cleanup  # auto-delete debug outputs after success
+```
+
+### 1. Data preparation
+
+```bash
+jupyter notebook notebooks/01_data_preparation.ipynb
+```
+
+### 2. Supervised fine-tuning
+
+```bash
+python scripts/run_sft.py --config configs/sft_qwen.yaml
+```
+
+### 3. Reward model
+
+```bash
+python scripts/run_reward.py --config configs/reward_hh.yaml
+# alternative dataset
+python scripts/run_reward.py --config configs/reward_alt.yaml
+```
+
+### 4. PPO
+
+```bash
+python scripts/run_ppo.py --config configs/ppo_qwen.yaml
+```
+
+### 5. Evaluation
+
+```bash
+python scripts/run_evaluation.py --config configs/base.yaml
+```
+
+### 6. Human evaluation (optional)
+
+```bash
+jupyter notebook notebooks/06_human_eval_template.ipynb
+```
+
+## Outputs
+
+After a full run, `outputs/` will contain:
+
+- `models/` — LoRA adapters for SFT, reward model, and PPO policy
+- `logs/` — per-stage CSV training logs and YAML config snapshots
+- `figures/` — loss / reward / KL / length-distribution plots
+- `tables/` — evaluation summary CSVs (win rates, reward hacking and verbosity indicators)
+- `samples/` — generated outputs for qualitative review
+
+## Pinned dependencies
+
+TRL changes its API between minor versions. **Do not upgrade TRL without retesting PPO.**
+
+| Package | Version | Notes |
+|---|---|---|
+| transformers | 4.41.0 | Stable Qwen2.5 support |
+| trl | 0.9.6 | PPOTrainer / SFTTrainer / RewardTrainer APIs |
+| peft | 0.10.0 | LoRA / QLoRA |
+| datasets | 2.19.0 | HF dataset loader |
+| accelerate | latest | Mixed precision / multi-GPU |
+| bitsandbytes | latest | 4-bit quantization (GPU only) |
+| torch | ≥2.1.0 | CUDA 11.8+ recommended |
+
+## Hardware
+
+- **Minimum:** 8 GB RAM, modern CPU (Qwen2.5-0.5B only, slow)
+- **Recommended:** 8 GB+ VRAM GPU, 16 GB RAM
+- **Optimal:** 16 GB+ VRAM for SmolLM2-1.7B
+
+The code auto-detects CUDA and falls back to CPU. Default batch sizes target an 8 GB VRAM budget.
+
+## Reproducibility
+
+- Seeds are set centrally via `configs/base.yaml` (default `42`).
+- Every training run dumps a config snapshot into `outputs/logs/` alongside the CSV.
+- The smoke test exercises the full pipeline end-to-end and is the fastest way to detect regressions.
+
+## Engineering notes (compatibility gotchas)
+
+These are real issues hit during development. They are documented here so the next person doesn't have to re-debug them.
+
+### Python version
+Python **3.10** is recommended. The pinned stack (`trl==0.9.6`, `transformers==4.41.0`, `peft==0.10.0`) was tested on 3.10. Newer Pythons (3.13+) tend to break older HF releases.
+
+### TRL 0.9.6
+- `PPOConfig` uses `target=6.0` for the KL target, **not** `target_kl`.
+- KL divergence stats appear under different keys across minor versions (`ppo/mean_kl`, `ppo/kl`, `objective/kl`). The logger checks all known variants.
+
+### PPO policy loading (two-step flow)
+`AutoModelForCausalLMWithValueHead.from_pretrained()` does **not** accept `peft_pretrained_model_name_or_path` in this stack — the kwarg leaks into the underlying `__init__` and raises `TypeError`. The working pattern is:
+
+```python
+base = AutoModelForCausalLM.from_pretrained(BASE_ID)
+peft_model = PeftModel.from_pretrained(base, SFT_ADAPTER_DIR)
+policy = AutoModelForCausalLMWithValueHead.from_pretrained(peft_model)
+```
+
+### PEFT + gradient checkpointing
+With gradient checkpointing on, the first layer's output is detached from the graph and LoRA receives no gradients (`RuntimeError: element 0 of tensors does not require grad`).
+
+**Fix:** call `model.enable_input_require_grads()` after attaching LoRA, before training. Gradient checkpointing is auto-disabled on CPU.
+
+### SFTTrainer column handling
+`SFTTrainer` errors out if extra string columns (`prompt`, `chosen`, `rejected`, …) sit alongside `text`. Preprocessing strips everything except `text` before passing to the trainer.
+
+## License
+
+[MIT](LICENSE).

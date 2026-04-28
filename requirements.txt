@@ -1,0 +1,40 @@
+# RLHF Pipeline Dependencies
+# Pinned for reproducibility. TRL API changes frequently between versions.
+# Tested with Python 3.10+
+
+# Core ML
+torch>=2.1.0
+transformers==4.41.0
+datasets==2.19.0
+peft==0.10.0
+trl==0.9.6
+accelerate>=0.30.0
+tokenizers>=0.19.0
+
+# Quantization (optional, requires NVIDIA GPU + CUDA)
+# Uncomment if GPU with CUDA is available:
+# bitsandbytes>=0.43.0
+
+# Evaluation
+evaluate>=0.4.0
+scikit-learn>=1.4.0
+rouge-score>=0.1.2
+nltk>=3.8.0
+# bert-score>=0.3.13  # Uncomment if BERTScore needed (requires torch)
+
+# Data & Utilities
+pandas>=2.2.0
+numpy>=1.26.0
+PyYAML>=6.0
+tqdm>=4.66.0
+
+# Visualization
+matplotlib>=3.8.0
+seaborn>=0.13.0
+
+# Notebooks
+jupyter>=1.0.0
+ipywidgets>=8.1.0
+
+# Logging (optional — uncomment if using Weights & Biases)
+# wandb>=0.16.0

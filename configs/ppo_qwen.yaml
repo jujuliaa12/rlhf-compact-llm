@@ -1,0 +1,56 @@
+# =============================================================================
+# PPO Configuration — RLHF training for Qwen2.5-0.5B
+# =============================================================================
+# WARNING: TRL's PPOTrainer API changes between versions.
+# This config targets trl==0.9.6. If you upgrade TRL, review the PPO API docs.
+
+base_config: "configs/base.yaml"
+
+# SFT model to use as starting policy
+sft_model:
+  path: "outputs/models/sft_qwen"
+  base_model: "Qwen/Qwen2.5-0.5B"
+
+# Reward model
+reward_model:
+  path: "outputs/models/reward_model_hh"
+  base_model: "Qwen/Qwen2.5-0.5B"
+
+# Generation settings
+generation:
+  max_new_tokens: 64
+  min_new_tokens: 16
+  temperature: 0.7
+  top_k: 50
+  top_p: 0.95
+  do_sample: true
+
+# PPO hyperparameters
+ppo:
+  output_dir: "outputs/models/ppo_qwen"
+  learning_rate: 1.41e-5
+  batch_size: 8
+  mini_batch_size: 2
+  ppo_epochs: 4
+  max_steps: 500           # Total PPO steps; increase for longer training
+  init_kl_coef: 0.2        # Initial KL penalty coefficient
+  target_kl: 6.0           # Target KL divergence
+  gamma: 1.0
+  lam: 0.95
+  cliprange: 0.2
+  cliprange_value: 0.2
+  gradient_accumulation_steps: 1
+  max_grad_norm: 1.0
+
+# Dataset — prompts for PPO generation
+dataset:
+  name: "Anthropic/hh-rlhf"
+  split: "train"
+  max_samples: 5000         # Number of prompts to use
+  max_prompt_length: 256
+
+# Logging
+logging:
+  csv_log_path: "outputs/logs/ppo_training_log.csv"
+  config_snapshot_path: "outputs/logs/ppo_config_snapshot.yaml"
+  log_every_n_steps: 10

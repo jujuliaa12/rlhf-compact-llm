@@ -1,0 +1,49 @@
+# =============================================================================
+# Reward Model Configuration — Anthropic HH-RLHF dataset
+# =============================================================================
+
+base_config: "configs/base.yaml"
+
+# Model — use the same base model as SFT for reward modeling
+model:
+  name: "Qwen/Qwen2.5-0.5B"
+  max_seq_length: 512
+
+# LoRA configuration
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: ["q_proj", "v_proj"]
+
+# Dataset
+dataset:
+  name: "Anthropic/hh-rlhf"
+  max_train_samples: 10000
+  max_val_samples: 2000
+  processed_path: "data/processed/hh_rlhf"
+
+# Training hyperparameters
+training:
+  output_dir: "outputs/models/reward_model_hh"
+  num_train_epochs: 1
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 1.0e-4
+  weight_decay: 0.01
+  warmup_ratio: 0.05
+  lr_scheduler_type: "cosine"
+  logging_steps: 50
+  save_steps: 500
+  eval_steps: 250
+  save_total_limit: 1
+  fp16: false
+  bf16: true
+  gradient_checkpointing: true
+  report_to: "none"
+
+# Logging
+logging:
+  csv_log_path: "outputs/logs/reward_training_log.csv"
+  config_snapshot_path: "outputs/logs/reward_config_snapshot.yaml"

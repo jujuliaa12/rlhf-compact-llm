@@ -1,0 +1,56 @@
+# =============================================================================
+# Base Configuration — Shared settings across all pipeline stages
+# =============================================================================
+
+# Reproducibility
+seed: 42
+
+# Project paths (relative to project root)
+paths:
+  project_root: "."
+  data_raw: "data/raw"
+  data_processed: "data/processed"
+  data_eval: "data/eval"
+  output_models: "outputs/models"
+  output_logs: "outputs/logs"
+  output_figures: "outputs/figures"
+  output_tables: "outputs/tables"
+  output_samples: "outputs/samples"
+
+# Model options
+models:
+  primary: "Qwen/Qwen2.5-0.5B"
+  secondary: "HuggingFaceTB/SmolLM2-1.7B"
+
+# Dataset options
+datasets:
+  preference_primary: "Anthropic/hh-rlhf"
+  preference_secondary: "HuggingFaceH4/ultrafeedback_binarized"
+
+# Common training settings
+training:
+  fp16: false         # Disabled — can cause "unscale FP16 gradients" errors with some optimisers
+  bf16: true          # Use bfloat16 — more stable than fp16, supported on T4/Ampere+
+  gradient_checkpointing: true
+  dataloader_num_workers: 0   # Set >0 if not on Windows or if stable
+
+# Common LoRA defaults
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: ["q_proj", "v_proj"]
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+# Debug / small-run mode
+# Set debug: true to run the full pipeline on a tiny subset for testing.
+# debug_max_samples overrides all per-stage max_train/val_samples when debug is on.
+debug: false
+debug_max_samples: 100        # Samples per split when debug mode is active
+debug_max_eval_samples: 50
+debug_max_ppo_steps: 20
+debug_num_epochs: 1
+
+# Hardware
+device: "auto"  # "auto" detects GPU, falls back to CPU

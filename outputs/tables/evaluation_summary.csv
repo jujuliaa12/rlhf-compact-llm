@@ -1,0 +1,4 @@
+model_name,num_responses,length_mean_chars,length_median_chars,length_std_chars,length_min_chars,length_max_chars,length_mean_words,length_median_words,length_std_words,length_min_words,length_max_words
+base,50,477.74,540.0,185.78135643815287,43,726,83.9,98.5,32.58051564969468,7,114
+ppo,50,506.8,500.0,57.28734589767621,397,655,99.68,101.0,9.080616719144135,73,118
+sft,50,509.12,513.5,68.83215527644039,308,681,99.56,103.5,12.79868743270184,51,113
