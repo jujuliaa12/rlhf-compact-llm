@@ -1,0 +1,58 @@
+name: Bug report
+description: Report something broken in the pipeline.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What broke?
+      description: A clear description of the bug. What did you expect, what did you see?
+      placeholder: |
+        e.g. PPOTrainer crashes with `TypeError: ...` when running `python scripts/run_ppo.py --config configs/ppo_qwen.yaml`.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal commands or code to reproduce.
+      placeholder: |
+        1. `pip install -e .`
+        2. `python scripts/smoke_test.py`
+        3. Error occurs at PPO stage.
+    validations:
+      required: true
+
+  - type: input
+    id: stage
+    attributes:
+      label: Pipeline stage
+      placeholder: e.g. SFT / reward model / PPO / evaluation / smoke test
+    validations:
+      required: false
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Python, GPU, key library versions.
+      placeholder: |
+        - OS: Ubuntu 22.04
+        - Python: 3.10.12
+        - GPU: RTX 3090 (24 GB) / CPU only
+        - torch: 2.3.0
+        - transformers: 4.41.0
+        - trl: 0.9.6
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / traceback
+      description: Paste the full error traceback inside a code block.
+      render: shell
+    validations:
+      required: false
