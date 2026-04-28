@@ -66,6 +66,15 @@ notebooks = [
 gpu = [
     "bitsandbytes>=0.43.0",
 ]
+eval = [
+    # Capability benchmarks (MMLU, GSM8K, etc.) via the de-facto standard
+    # evaluation harness. Used by scripts/run_capability_eval.py.
+    "lm-eval>=0.4.0",
+]
+demo = [
+    # HF Space / local Gradio demo dependencies.
+    "gradio>=4.30.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/jujuliaa12/rlhf-compact-llm"
