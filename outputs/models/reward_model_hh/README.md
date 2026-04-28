@@ -30,8 +30,8 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 base = AutoModelForSequenceClassification.from_pretrained(
     "Qwen/Qwen2.5-0.5B", num_labels=1
 )
-model = PeftModel.from_pretrained(base, "julia569922/qwen2.5-0.5b-rlhf-rm")
-tok = AutoTokenizer.from_pretrained("julia569922/qwen2.5-0.5b-rlhf-rm")
+model = PeftModel.from_pretrained(base, "Julia569922/qwen2.5-0.5b-rlhf-rm")
+tok = AutoTokenizer.from_pretrained("Julia569922/qwen2.5-0.5b-rlhf-rm")
 ```
 
 From this repository:

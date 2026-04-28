@@ -28,8 +28,8 @@ from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 base = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B")
-model = PeftModel.from_pretrained(base, "julia569922/qwen2.5-0.5b-rlhf-sft")
-tok = AutoTokenizer.from_pretrained("julia569922/qwen2.5-0.5b-rlhf-sft")
+model = PeftModel.from_pretrained(base, "Julia569922/qwen2.5-0.5b-rlhf-sft")
+tok = AutoTokenizer.from_pretrained("Julia569922/qwen2.5-0.5b-rlhf-sft")
 ```
 
 From this repository (after `git clone`):

@@ -6,7 +6,7 @@
 [![TRL](https://img.shields.io/badge/trl-0.9.6-orange.svg)](https://github.com/huggingface/trl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/jujuliaa12/rlhf-compact-llm/actions/workflows/ci.yml/badge.svg)](https://github.com/jujuliaa12/rlhf-compact-llm/actions/workflows/ci.yml)
-[![HF Models](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-models-yellow)](https://huggingface.co/julia569922)
+[![HF Models](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-models-yellow)](https://huggingface.co/Julia569922)
 
 An end-to-end **Reinforcement Learning from Human Feedback (RLHF)** pipeline implemented from scratch on top of Hugging Face TRL, designed to be reproducible on a single GPU (or CPU) using compact open-source language models.
 
@@ -20,9 +20,9 @@ The three LoRA adapters from the run below are published on the Hub:
 
 | Stage | Hugging Face | Use it for |
 |---|---|---|
-| SFT | [`julia569922/qwen2.5-0.5b-rlhf-sft`](https://huggingface.co/julia569922/qwen2.5-0.5b-rlhf-sft) | Instruction-following baseline |
-| Reward model | [`julia569922/qwen2.5-0.5b-rlhf-rm`](https://huggingface.co/julia569922/qwen2.5-0.5b-rlhf-rm) | Score (prompt, response) pairs |
-| PPO policy | [`julia569922/qwen2.5-0.5b-rlhf-ppo`](https://huggingface.co/julia569922/qwen2.5-0.5b-rlhf-ppo) | Aligned generation |
+| SFT | [`Julia569922/qwen2.5-0.5b-rlhf-sft`](https://huggingface.co/Julia569922/qwen2.5-0.5b-rlhf-sft) | Instruction-following baseline |
+| Reward model | [`Julia569922/qwen2.5-0.5b-rlhf-rm`](https://huggingface.co/Julia569922/qwen2.5-0.5b-rlhf-rm) | Score (prompt, response) pairs |
+| PPO policy | [`Julia569922/qwen2.5-0.5b-rlhf-ppo`](https://huggingface.co/Julia569922/qwen2.5-0.5b-rlhf-ppo) | Aligned generation |
 
 Quick load (example: PPO adapter):
 
@@ -31,8 +31,8 @@ from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 base = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B")
-model = PeftModel.from_pretrained(base, "julia569922/qwen2.5-0.5b-rlhf-ppo")
-tok   = AutoTokenizer.from_pretrained("julia569922/qwen2.5-0.5b-rlhf-ppo")
+model = PeftModel.from_pretrained(base, "Julia569922/qwen2.5-0.5b-rlhf-ppo")
+tok   = AutoTokenizer.from_pretrained("Julia569922/qwen2.5-0.5b-rlhf-ppo")
 
 prompt = "Human: What's a good way to learn machine learning?\n\nAssistant:"
 inputs = tok(prompt, return_tensors="pt")

@@ -31,15 +31,15 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from trl import AutoModelForCausalLMWithValueHead
 
 base = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B")
-peft_model = PeftModel.from_pretrained(base, "julia569922/qwen2.5-0.5b-rlhf-ppo")
+peft_model = PeftModel.from_pretrained(base, "Julia569922/qwen2.5-0.5b-rlhf-ppo")
 policy = AutoModelForCausalLMWithValueHead.from_pretrained(peft_model)
-tok = AutoTokenizer.from_pretrained("julia569922/qwen2.5-0.5b-rlhf-ppo")
+tok = AutoTokenizer.from_pretrained("Julia569922/qwen2.5-0.5b-rlhf-ppo")
 ```
 
 For inference only (no value head needed):
 
 ```python
-model = PeftModel.from_pretrained(base, "julia569922/qwen2.5-0.5b-rlhf-ppo")
+model = PeftModel.from_pretrained(base, "Julia569922/qwen2.5-0.5b-rlhf-ppo")
 ```
 
 From this repository:
