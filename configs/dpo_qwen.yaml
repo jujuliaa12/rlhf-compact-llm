@@ -55,6 +55,10 @@ training:
 dataset:
   name: "Anthropic/hh-rlhf"
   split_train: "train"
+  # 5000 samples is the canonical setting for a GPU run (~30-60 min on a
+  # consumer GPU). On CPU this is unusably slow at ~100 s/step.
+  # If you do not have GPU access, drop this to 200-500 to get a real DPO
+  # adapter in 30-60 minutes; results will be noisier but the pipeline runs.
   max_train_samples: 5000
   max_prompt_length: 256
 

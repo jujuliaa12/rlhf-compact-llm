@@ -165,6 +165,7 @@ def _build_trainer(policy, args, train_dataset, tokenizer, lora_config, cfg):
 def run_dpo(
     config_path: str | Path,
     train_dataset: Dataset | None = None,
+    debug: bool = False,
 ) -> dict:
     """
     Run DPO training from a config file.
@@ -173,6 +174,8 @@ def run_dpo(
         config_path: Path to the DPO YAML config.
         train_dataset: Optional pre-loaded preference dataset with
                        columns ``prompt``, ``chosen``, ``rejected``.
+        debug: If True, cap dataset / epochs / steps to debug values
+               (matches the ``--debug`` CLI flag).
 
     Returns:
         Dict with ``model``, ``tokenizer``, ``trainer``, ``log_history``.
@@ -181,6 +184,8 @@ def run_dpo(
     from peft import PeftModel
 
     cfg = load_full_config(config_path)
+    if debug:
+        cfg["debug"] = True
     cfg = apply_debug_overrides(cfg)
     set_seed(cfg.get("seed", 42))
 

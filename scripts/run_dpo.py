@@ -45,20 +45,16 @@ def main():
     )
     args = parser.parse_args()
 
-    from src.data_utils import apply_debug_overrides, load_full_config, set_seed
+    from src.data_utils import load_full_config, set_seed
     from src.dpo_train import run_dpo
 
     cfg = load_full_config(args.config)
-    if args.debug:
-        cfg["debug"] = True
-    cfg = apply_debug_overrides(cfg)
-
     set_seed(cfg.get("seed", 42))
 
     logger.info("Starting DPO training with config: %s", args.config)
-    logger.info("Debug mode: %s", cfg.get("debug", False))
+    logger.info("Debug mode: %s", args.debug)
 
-    run_dpo(args.config)
+    run_dpo(args.config, debug=args.debug)
 
     logger.info("DPO training complete.")
     logger.info(
