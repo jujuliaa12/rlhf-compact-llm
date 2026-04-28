@@ -23,13 +23,27 @@ Plots: `outputs/figures/ppo_kl.png`, `outputs/figures/ppo_reward_length.png`.
 
 ## Loading
 
+From the Hugging Face Hub:
+
 ```python
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from trl import AutoModelForCausalLMWithValueHead
 
 base = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B")
-peft_model = PeftModel.from_pretrained(base, "outputs/models/ppo_qwen")
+peft_model = PeftModel.from_pretrained(base, "julia569922/qwen2.5-0.5b-rlhf-ppo")
 policy = AutoModelForCausalLMWithValueHead.from_pretrained(peft_model)
-tok = AutoTokenizer.from_pretrained("outputs/models/ppo_qwen")
+tok = AutoTokenizer.from_pretrained("julia569922/qwen2.5-0.5b-rlhf-ppo")
+```
+
+For inference only (no value head needed):
+
+```python
+model = PeftModel.from_pretrained(base, "julia569922/qwen2.5-0.5b-rlhf-ppo")
+```
+
+From this repository:
+
+```python
+peft_model = PeftModel.from_pretrained(base, "outputs/models/ppo_qwen")
 ```

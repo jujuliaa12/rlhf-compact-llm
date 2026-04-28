@@ -21,6 +21,8 @@ Training config and CSV log: `outputs/logs/reward_config_snapshot.yaml`, `output
 
 ## Loading
 
+From the Hugging Face Hub:
+
 ```python
 from peft import PeftModel
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
@@ -28,6 +30,13 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 base = AutoModelForSequenceClassification.from_pretrained(
     "Qwen/Qwen2.5-0.5B", num_labels=1
 )
+model = PeftModel.from_pretrained(base, "julia569922/qwen2.5-0.5b-rlhf-rm")
+tok = AutoTokenizer.from_pretrained("julia569922/qwen2.5-0.5b-rlhf-rm")
+```
+
+From this repository:
+
+```python
 model = PeftModel.from_pretrained(base, "outputs/models/reward_model_hh")
 tok = AutoTokenizer.from_pretrained("outputs/models/reward_model_hh")
 ```

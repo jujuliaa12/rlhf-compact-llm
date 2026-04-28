@@ -21,11 +21,20 @@ Training config and CSV log: `outputs/logs/sft_config_snapshot.yaml`, `outputs/l
 
 ## Loading
 
+From the Hugging Face Hub:
+
 ```python
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 base = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B")
+model = PeftModel.from_pretrained(base, "julia569922/qwen2.5-0.5b-rlhf-sft")
+tok = AutoTokenizer.from_pretrained("julia569922/qwen2.5-0.5b-rlhf-sft")
+```
+
+From this repository (after `git clone`):
+
+```python
 model = PeftModel.from_pretrained(base, "outputs/models/sft_qwen")
 tok = AutoTokenizer.from_pretrained("outputs/models/sft_qwen")
 ```

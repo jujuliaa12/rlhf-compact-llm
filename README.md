@@ -5,12 +5,40 @@
 [![Transformers](https://img.shields.io/badge/transformers-4.41-yellow.svg)](https://github.com/huggingface/transformers)
 [![TRL](https://img.shields.io/badge/trl-0.9.6-orange.svg)](https://github.com/huggingface/trl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![CI](https://github.com/jujuliaa12/rlhf-compact-llm/actions/workflows/ci.yml/badge.svg)](https://github.com/jujuliaa12/rlhf-compact-llm/actions/workflows/ci.yml)
+[![HF Models](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-models-yellow)](https://huggingface.co/julia569922)
 
 An end-to-end **Reinforcement Learning from Human Feedback (RLHF)** pipeline implemented from scratch on top of Hugging Face TRL, designed to be reproducible on a single GPU (or CPU) using compact open-source language models.
 
 The repo covers the full alignment workflow — **SFT → Reward Modeling → PPO → Evaluation** — and ships with a smoke test, training logs, plots, and analysis utilities for studying *reward hacking* and *verbosity bias* in small models.
 
 > **TL;DR.** A complete RLHF run on Qwen2.5-0.5B with HH-RLHF: SFT cross-entropy drops from **2.54 → 2.10** (20% reduction), the reward model reaches **65.5% pairwise accuracy** on held-out preferences, and PPO produces a stable adapter — but mean reward over training **decreases** (2.24 → 1.93) while response length grows **+37% during rollouts**, a textbook reward-hacking signature that is analysed in [`docs/RESULTS.md`](docs/RESULTS.md).
+
+## Trained model adapters on Hugging Face
+
+The three LoRA adapters from the run below are published on the Hub:
+
+| Stage | Hugging Face | Use it for |
+|---|---|---|
+| SFT | [`julia569922/qwen2.5-0.5b-rlhf-sft`](https://huggingface.co/julia569922/qwen2.5-0.5b-rlhf-sft) | Instruction-following baseline |
+| Reward model | [`julia569922/qwen2.5-0.5b-rlhf-rm`](https://huggingface.co/julia569922/qwen2.5-0.5b-rlhf-rm) | Score (prompt, response) pairs |
+| PPO policy | [`julia569922/qwen2.5-0.5b-rlhf-ppo`](https://huggingface.co/julia569922/qwen2.5-0.5b-rlhf-ppo) | Aligned generation |
+
+Quick load (example: PPO adapter):
+
+```python
+from peft import PeftModel
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+base = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B")
+model = PeftModel.from_pretrained(base, "julia569922/qwen2.5-0.5b-rlhf-ppo")
+tok   = AutoTokenizer.from_pretrained("julia569922/qwen2.5-0.5b-rlhf-ppo")
+
+prompt = "Human: What's a good way to learn machine learning?\n\nAssistant:"
+inputs = tok(prompt, return_tensors="pt")
+out = model.generate(**inputs, max_new_tokens=128, do_sample=True, temperature=0.7)
+print(tok.decode(out[0], skip_special_tokens=True))
+```
 
 ---
 

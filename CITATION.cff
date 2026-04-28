@@ -7,6 +7,16 @@ authors:
     given-names: Yu-Hsuan
 repository-code: "https://github.com/jujuliaa12/rlhf-compact-llm"
 url: "https://github.com/jujuliaa12/rlhf-compact-llm"
+identifiers:
+  - description: SFT LoRA adapter on Hugging Face Hub
+    type: url
+    value: "https://huggingface.co/julia569922/qwen2.5-0.5b-rlhf-sft"
+  - description: Reward model LoRA adapter on Hugging Face Hub
+    type: url
+    value: "https://huggingface.co/julia569922/qwen2.5-0.5b-rlhf-rm"
+  - description: PPO-aligned LoRA adapter on Hugging Face Hub
+    type: url
+    value: "https://huggingface.co/julia569922/qwen2.5-0.5b-rlhf-ppo"
 abstract: >-
   An end-to-end Reinforcement Learning from Human Feedback (RLHF) pipeline
   built on Hugging Face TRL, targeting compact open-source language models
