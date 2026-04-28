@@ -197,6 +197,21 @@ def run_dpo(
     sft_adapter_path = sft_cfg.get("path", "outputs/models/sft_qwen")
 
     tokenizer = load_tokenizer(base_model_name)
+
+    # Qwen2.5's tokenizer ships without a BOS token (bos_token_id is None).
+    # TRL's DPOTrainer.tokenize_row unconditionally prepends bos_token_id
+    # to the prompt input_ids; if it's None, every row ends up with a None
+    # element and the collator crashes when calling torch.tensor(..., dtype=int64).
+    # Aliasing BOS to EOS is the standard workaround for BOS-less tokenizers
+    # and matches what most BOS-aware training stacks do for Qwen.
+    if tokenizer.bos_token_id is None:
+        tokenizer.bos_token = tokenizer.eos_token
+        logger.info(
+            "Tokenizer had no BOS — aliased bos_token to eos_token "
+            "(id=%s). This is the standard fix for Qwen-family DPO.",
+            tokenizer.bos_token_id,
+        )
+
     base = load_causal_lm(base_model_name, cfg)
 
     # Continue from the SFT adapter as the policy initialisation, then attach
