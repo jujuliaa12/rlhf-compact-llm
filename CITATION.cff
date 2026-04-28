@@ -3,8 +3,7 @@ message: "If you use this software, please cite it as below."
 title: "rlhf-compact-llm: An end-to-end RLHF pipeline for compact open-source LLMs"
 type: software
 authors:
-  - family-names: Tseng
-    given-names: Yu-Hsuan
+  - name: jujuliaa12
 repository-code: "https://github.com/jujuliaa12/rlhf-compact-llm"
 url: "https://github.com/jujuliaa12/rlhf-compact-llm"
 identifiers:

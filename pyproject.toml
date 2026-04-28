@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10,<3.13"
 license = { file = "LICENSE" }
 authors = [
-    { name = "Yu-Hsuan Tseng" },
+    { name = "jujuliaa12" },
 ]
 keywords = [
     "rlhf",
