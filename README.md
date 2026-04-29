@@ -162,6 +162,23 @@ Two prompts from the held-out evaluation set (50 prompts total, full table at `o
 
 The pattern across the eval set is consistent: **alignment improves refusals on adversarial prompts but does not fix factuality**, which is the expected behaviour given that HH-RLHF preferences encode helpfulness/harmlessness, not truthfulness.
 
+### Capability evaluation (alignment-tax measurement)
+
+Quantifies how much knowledge / reasoning capability is lost during alignment. Run via `scripts/run_capability_eval.py` on top of `lm-evaluation-harness`. Numbers below are zero-shot MMLU accuracy on a 50-question slice (PPO/DPO numbers are still running and will be merged in a follow-up commit).
+
+| Model | MMLU (50 Q, 0-shot) | Δ vs base |
+|---|---:|---:|
+| **base** (Qwen2.5-0.5B) | **0.494** | — |
+| **SFT** | 0.479 | **−0.015** |
+| PPO | _running_ | _pending_ |
+| DPO | _running_ | _pending_ |
+
+Subject-level highlights (base → SFT):
+- **Drops:** `business_ethics` 0.62 → 0.58 (−0.04), `moral_disputes` 0.56 → 0.52 (−0.04), `world_religions` 0.62 → 0.64 stable.
+- **Gains:** `clinical_knowledge` 0.48 → 0.58 (+0.10), `human_aging` 0.42 → 0.48 (+0.06), `international_law` 0.66 → 0.72 (+0.06).
+
+The SFT step costs ~1.5pp on overall MMLU, which is consistent with the broader literature on alignment tax at compact scale. Subject-level variance is large and informative: knowledge-with-context-rich-priors (`clinical_knowledge`) gains, while value-laden prompts (`business_ethics`, `moral_disputes`) lose accuracy — likely a side effect of HH-RLHF teaching the model to hedge on contested topics.
+
 ---
 
 ## Repository layout

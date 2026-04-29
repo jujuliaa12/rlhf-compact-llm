@@ -83,6 +83,37 @@ The DPO trajectory is what successful preference optimization is supposed to loo
 
 PPO and SFT look almost identical on length — and *much* more consistent than the base model (std drops from 186 → 57). This is one of the stronger signals in the run: alignment **stabilises** output length even when it doesn't increase mean reward.
 
+### 1.6 Capability benchmark — MMLU (alignment tax, partial)
+
+Zero-shot MMLU on a 50-question slice via `lm-evaluation-harness`. Full table at `outputs/tables/capability_eval.csv`; per-run JSON dumps under `outputs/logs/capability_eval/`.
+
+| Model | MMLU acc. | Δ vs base |
+|---|---:|---:|
+| base (Qwen2.5-0.5B) | **0.494** | — |
+| SFT | 0.479 | −0.015 |
+| PPO | _pending_ | _pending_ |
+| DPO | _pending_ | _pending_ |
+
+The SFT step costs ~1.5pp on overall MMLU. The subject-level breakdown is more informative than the headline number:
+
+| Subject | base | SFT | Δ |
+|---|---:|---:|---:|
+| `business_ethics` | 0.62 | 0.58 | −0.04 |
+| `moral_disputes` | 0.56 | 0.52 | −0.04 |
+| `professional_psychology` | 0.40 | 0.36 | −0.04 |
+| `prehistory` | 0.52 | 0.50 | −0.02 |
+| `human_aging` | 0.42 | 0.48 | **+0.06** |
+| `international_law` | 0.66 | 0.72 | **+0.06** |
+| `human_sexuality` | 0.62 | 0.58 | −0.04 |
+| `clinical_knowledge` | 0.48 | 0.58 | **+0.10** |
+
+Two clusters emerge:
+
+1. **Value-laden subjects lose accuracy** (`business_ethics`, `moral_disputes`, `human_sexuality`) — likely because HH-RLHF training pushes the model toward hedging / refusal patterns on contested topics, which costs MCQ accuracy.
+2. **Knowledge-rich subjects gain accuracy** (`clinical_knowledge`, `international_law`, `human_aging`) — possibly because the chosen responses in HH-RLHF are systematically more grounded / formal than the rejected ones, so SFT on chosen text incidentally tightens factual phrasing in those domains.
+
+This is a more interesting finding than a flat number: **alignment tax is not uniform**, and the loss is concentrated where value-loaded refusals start kicking in. The PPO and DPO numbers (running) will tell us whether the second-stage RLHF compounds or attenuates this pattern.
+
 ## 2. Did RLHF work? (Q1)
 
 **Partially, on what HH-RLHF rewards. Not on what it doesn't.**
