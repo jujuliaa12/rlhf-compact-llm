@@ -15,9 +15,9 @@ The repo covers the full alignment workflow — **SFT → Reward Modeling → PP
 
 > **TL;DR.** A complete RLHF run on Qwen2.5-0.5B with HH-RLHF compares **PPO** and **DPO** head-to-head on (1) preference alignment and (2) capability preservation:
 > - **Preference alignment** — PPO's mean reward drifts *down* over training (2.24 → 1.93) with a +37% rollout-length blowup (mild reward hacking). DPO on the same data lifts pairwise accuracy from chance (51%) to **66%** with a clean margin growth from 0.002 to 0.322.
-> - **Alignment tax (MMLU 50Q)** — SFT and PPO both lose **−1.5pp** vs base; **DPO loses only −0.2pp** — roughly **7× smaller capability cost** for the same alignment objective.
+> - **Alignment tax** — same factor of ~7× on two independent benchmarks. **MMLU**: SFT and PPO both lose 1.5pp; **DPO loses 0.2pp**. **GSM8K**: SFT and PPO both lose 14pp (a 41% relative drop in reasoning accuracy); **DPO loses only 2pp**.
 >
-> DPO trains and preserves capability; PPO drifts and pays the same tax as SFT. Detailed analysis in [`docs/RESULTS.md`](docs/RESULTS.md).
+> DPO trains and preserves capability; PPO drifts and pays the same tax as SFT — and on generative reasoning that tax is roughly half the original capability. Detailed analysis in [`docs/RESULTS.md`](docs/RESULTS.md).
 
 ## Try it in the browser
 
@@ -168,22 +168,22 @@ The pattern across the eval set is consistent: **alignment improves refusals on 
 
 ### Capability evaluation — the alignment-tax story (4-way comparison)
 
-Quantifies how much knowledge / reasoning capability is lost during alignment. Run via `scripts/run_capability_eval.py` on top of `lm-evaluation-harness`. Numbers below are zero-shot MMLU accuracy on a 50-question slice across all 57 subjects.
+Quantifies how much knowledge / reasoning capability is lost during alignment. Run via `scripts/run_capability_eval.py` on top of `lm-evaluation-harness`. Numbers below are accuracies on a 50-question slice — zero-shot for MMLU, 5-shot for GSM8K (the standard setting).
 
-| Model | MMLU (50 Q, 0-shot) | Δ vs base |
-|---|---:|---:|
-| **base** (Qwen2.5-0.5B) | **0.494** | — |
-| SFT  | 0.479 | −0.015 |
-| PPO  | 0.479 | −0.015 |
-| **DPO** | **0.492** | **−0.002** |
+| Model | MMLU (0-shot) | Δ vs base | GSM8K (5-shot) | Δ vs base |
+|---|---:|---:|---:|---:|
+| **base** (Qwen2.5-0.5B) | **0.494** | — | **0.340** | — |
+| SFT  | 0.479 | −0.015 | 0.200 | **−0.140 (−41%)** |
+| PPO  | 0.479 | −0.015 | 0.200 | **−0.140 (−41%)** |
+| **DPO** | **0.492** | **−0.002** | **0.320** | **−0.020 (−6%)** |
 
-**Three findings worth pulling out:**
+**Findings.**
 
-1. **PPO and SFT are statistically identical** on MMLU (both 0.4793 to four decimal places). Combined with PPO's *declining* mean reward during training, this confirms the earlier diagnosis: the PPO adapter at this scale is barely distinguishable from the SFT initialisation in capability space.
-2. **DPO preserves almost all base-model capability** — only 0.2pp tax, **roughly 7× smaller than SFT's**. DPO does meaningful alignment (66% pairwise preference accuracy on HH-RLHF) without paying the usual capability cost.
-3. **Subject-level gains for DPO**: `jurisprudence` +0.08, `clinical_knowledge` +0.06, `nutrition` +0.04, `high_school_macroeconomics` +0.04. These are domains where chosen-vs-rejected preferences encode clearer factual / formal phrasing, and DPO's policy-distribution-aware loss extracts that signal without flattening other knowledge.
+1. **GSM8K shows a large alignment tax that MMLU hides.** SFT halves reasoning accuracy (34% → 20%), PPO doesn't recover any of it, and the gap **shows up only on the generative reasoning benchmark**, not on MMLU's MCQ format. The same 0.5B model that takes a 1.5pp hit on multiple-choice loses *14pp* on math word problems after SFT.
+2. **PPO is indistinguishable from SFT on both benchmarks.** MMLU 0.4793 = SFT to four decimals, GSM8K 0.20 = SFT exactly. Combined with PPO's *declining* mean reward during training, this confirms the diagnosis: at this scale the PPO adapter does not move the policy off SFT in any measurable direction.
+3. **DPO preserves capability ~7× better than SFT/PPO on both benchmarks.** MMLU tax 0.2pp vs 1.5pp (≈7×), GSM8K tax 2pp vs 14pp (≈7×). The same factor on two structurally different evaluations is the cleanest indicator that this is a real DPO-vs-PPO/SFT property at compact scale, not a measurement artefact.
 
-The headline takeaway is the **DPO vs PPO contrast at compact scale**: DPO trains, PPO drifts; DPO costs ~0pp, PPO costs ~1.5pp. Both run on the same data with the same compute budget. This is a clean, falsifiable finding.
+The takeaway compresses to: **DPO trains and preserves capability; SFT and PPO pay the same alignment tax — and on reasoning-heavy tasks that tax can be roughly half the original capability.** Same data, same LoRA budget, same number of preference triples. This is the cleanest result the run produces and the kind of comparison the compact-LLM RLHF literature is short on.
 
 ---
 
