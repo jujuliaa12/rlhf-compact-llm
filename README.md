@@ -13,7 +13,11 @@ An end-to-end **Reinforcement Learning from Human Feedback (RLHF)** pipeline imp
 
 The repo covers the full alignment workflow — **SFT → Reward Modeling → PPO / DPO → Evaluation (preference + capability)** — and ships with a smoke test, training logs, plots, and analysis utilities for studying *reward hacking* and *verbosity bias* in small models.
 
-> **TL;DR.** A complete RLHF run on Qwen2.5-0.5B with HH-RLHF compares **PPO** and **DPO** head-to-head: SFT CE 2.54 → 2.10, the reward model hits 65.5% pairwise accuracy, **PPO** mean reward drifts *down* (2.24 → 1.93) with a +37% rollout-length blowup (mild reward hacking), while **DPO** on the same data lifts pairwise accuracy from chance (51%) to **66%** with a clean margin growth from 0.002 to 0.322. Detailed analysis in [`docs/RESULTS.md`](docs/RESULTS.md).
+> **TL;DR.** A complete RLHF run on Qwen2.5-0.5B with HH-RLHF compares **PPO** and **DPO** head-to-head on (1) preference alignment and (2) capability preservation:
+> - **Preference alignment** — PPO's mean reward drifts *down* over training (2.24 → 1.93) with a +37% rollout-length blowup (mild reward hacking). DPO on the same data lifts pairwise accuracy from chance (51%) to **66%** with a clean margin growth from 0.002 to 0.322.
+> - **Alignment tax (MMLU 50Q)** — SFT and PPO both lose **−1.5pp** vs base; **DPO loses only −0.2pp** — roughly **7× smaller capability cost** for the same alignment objective.
+>
+> DPO trains and preserves capability; PPO drifts and pays the same tax as SFT. Detailed analysis in [`docs/RESULTS.md`](docs/RESULTS.md).
 
 ## Try it in the browser
 
@@ -162,22 +166,24 @@ Two prompts from the held-out evaluation set (50 prompts total, full table at `o
 
 The pattern across the eval set is consistent: **alignment improves refusals on adversarial prompts but does not fix factuality**, which is the expected behaviour given that HH-RLHF preferences encode helpfulness/harmlessness, not truthfulness.
 
-### Capability evaluation (alignment-tax measurement)
+### Capability evaluation — the alignment-tax story (4-way comparison)
 
-Quantifies how much knowledge / reasoning capability is lost during alignment. Run via `scripts/run_capability_eval.py` on top of `lm-evaluation-harness`. Numbers below are zero-shot MMLU accuracy on a 50-question slice (PPO/DPO numbers are still running and will be merged in a follow-up commit).
+Quantifies how much knowledge / reasoning capability is lost during alignment. Run via `scripts/run_capability_eval.py` on top of `lm-evaluation-harness`. Numbers below are zero-shot MMLU accuracy on a 50-question slice across all 57 subjects.
 
 | Model | MMLU (50 Q, 0-shot) | Δ vs base |
 |---|---:|---:|
 | **base** (Qwen2.5-0.5B) | **0.494** | — |
-| **SFT** | 0.479 | **−0.015** |
-| PPO | _running_ | _pending_ |
-| DPO | _running_ | _pending_ |
+| SFT  | 0.479 | −0.015 |
+| PPO  | 0.479 | −0.015 |
+| **DPO** | **0.492** | **−0.002** |
 
-Subject-level highlights (base → SFT):
-- **Drops:** `business_ethics` 0.62 → 0.58 (−0.04), `moral_disputes` 0.56 → 0.52 (−0.04), `world_religions` 0.62 → 0.64 stable.
-- **Gains:** `clinical_knowledge` 0.48 → 0.58 (+0.10), `human_aging` 0.42 → 0.48 (+0.06), `international_law` 0.66 → 0.72 (+0.06).
+**Three findings worth pulling out:**
 
-The SFT step costs ~1.5pp on overall MMLU, which is consistent with the broader literature on alignment tax at compact scale. Subject-level variance is large and informative: knowledge-with-context-rich-priors (`clinical_knowledge`) gains, while value-laden prompts (`business_ethics`, `moral_disputes`) lose accuracy — likely a side effect of HH-RLHF teaching the model to hedge on contested topics.
+1. **PPO and SFT are statistically identical** on MMLU (both 0.4793 to four decimal places). Combined with PPO's *declining* mean reward during training, this confirms the earlier diagnosis: the PPO adapter at this scale is barely distinguishable from the SFT initialisation in capability space.
+2. **DPO preserves almost all base-model capability** — only 0.2pp tax, **roughly 7× smaller than SFT's**. DPO does meaningful alignment (66% pairwise preference accuracy on HH-RLHF) without paying the usual capability cost.
+3. **Subject-level gains for DPO**: `jurisprudence` +0.08, `clinical_knowledge` +0.06, `nutrition` +0.04, `high_school_macroeconomics` +0.04. These are domains where chosen-vs-rejected preferences encode clearer factual / formal phrasing, and DPO's policy-distribution-aware loss extracts that signal without flattening other knowledge.
+
+The headline takeaway is the **DPO vs PPO contrast at compact scale**: DPO trains, PPO drifts; DPO costs ~0pp, PPO costs ~1.5pp. Both run on the same data with the same compute budget. This is a clean, falsifiable finding.
 
 ---
 

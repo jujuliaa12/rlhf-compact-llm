@@ -179,12 +179,24 @@ def main():
         return
 
     import pandas as pd
-    df = pd.DataFrame(all_rows)
+    new_df = pd.DataFrame(all_rows)
 
     out_path = Path(args.out_csv)
     out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Merge with any existing CSV instead of overwriting — multi-stage
+    # CPU runs (e.g. base+sft today, ppo+dpo tomorrow) used to clobber
+    # earlier rows. New (model, task) pairs win over old ones.
+    if out_path.exists():
+        old = pd.read_csv(out_path)
+        keys = set(zip(new_df["model"], new_df["task"]))
+        old = old[~old.apply(lambda r: (r["model"], r["task"]) in keys, axis=1)]
+        df = pd.concat([old, new_df], ignore_index=True)
+    else:
+        df = new_df
+
     df.to_csv(out_path, index=False)
-    logger.info("Capability eval summary written to %s", out_path)
+    logger.info("Capability eval summary written to %s (%d rows)", out_path, len(df))
 
     # Pretty-print a small leaderboard for the terminal.
     if {"model", "task", "metric"} <= set(df.columns):
