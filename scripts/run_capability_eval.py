@@ -62,9 +62,15 @@ DEFAULT_TASKS = ["mmlu", "gsm8k"]
 DEFAULT_MODELS = ["base", "sft", "ppo"]
 
 
-def build_model_args(spec: dict, dtype: str) -> str:
+def build_model_args(spec: dict, dtype: str | None) -> str:
     """Compose the lm-eval `model_args` string for a HuggingFace model + LoRA."""
-    parts = [f"pretrained={spec['base']}", f"dtype={dtype}", "trust_remote_code=True"]
+    parts = [f"pretrained={spec['base']}", "trust_remote_code=True"]
+    # Some lm-eval versions leak `dtype` into the model __init__ instead of
+    # routing it to the HF wrapper, which crashes Qwen2ForCausalLM
+    # (it only accepts `torch_dtype`). Pass dtype only when the user
+    # explicitly opts in.
+    if dtype and dtype.lower() not in {"none", "auto", "default", ""}:
+        parts.append(f"dtype={dtype}")
     if spec.get("adapter"):
         parts.append(f"peft={spec['adapter']}")
     return ",".join(parts)
@@ -145,8 +151,10 @@ def main():
                         help="Evaluate on first N examples per task (for quick smoke runs)")
     parser.add_argument("--device", type=str, default=None,
                         help="cuda / cuda:0 / cpu — auto-detected if omitted")
-    parser.add_argument("--dtype", type=str, default="bfloat16",
-                        help="Inference dtype (bfloat16 / float16 / float32)")
+    parser.add_argument("--dtype", type=str, default="auto",
+                        help="Inference dtype (bfloat16 / float16 / float32 / auto). "
+                             "On CPU leave as 'auto' (defaults to float32 which is fastest "
+                             "and avoids an lm-eval kwarg-leaking bug).")
     parser.add_argument("--out-csv", type=str,
                         default="outputs/tables/capability_eval.csv")
     args = parser.parse_args()
