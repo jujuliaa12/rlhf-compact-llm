@@ -13,7 +13,7 @@ An end-to-end **Reinforcement Learning from Human Feedback (RLHF)** pipeline imp
 
 The repo covers the full alignment workflow — **SFT → Reward Modeling → PPO / DPO → Evaluation (preference + capability)** — and ships with a smoke test, training logs, plots, and analysis utilities for studying *reward hacking* and *verbosity bias* in small models.
 
-> **TL;DR.** A complete RLHF run on Qwen2.5-0.5B with HH-RLHF: SFT cross-entropy drops from **2.54 → 2.10** (20% reduction), the reward model reaches **65.5% pairwise accuracy** on held-out preferences, and PPO produces a stable adapter — but mean reward over training **decreases** (2.24 → 1.93) while response length grows **+37% during rollouts**, a textbook reward-hacking signature that is analysed in [`docs/RESULTS.md`](docs/RESULTS.md).
+> **TL;DR.** A complete RLHF run on Qwen2.5-0.5B with HH-RLHF compares **PPO** and **DPO** head-to-head: SFT CE 2.54 → 2.10, the reward model hits 65.5% pairwise accuracy, **PPO** mean reward drifts *down* (2.24 → 1.93) with a +37% rollout-length blowup (mild reward hacking), while **DPO** on the same data lifts pairwise accuracy from chance (51%) to **66%** with a clean margin growth from 0.002 to 0.322. Detailed analysis in [`docs/RESULTS.md`](docs/RESULTS.md).
 
 ## Try it in the browser
 
@@ -31,7 +31,8 @@ The three LoRA adapters from the run below are published on the Hub:
 |---|---|---|
 | SFT | [`Julia569922/qwen2.5-0.5b-rlhf-sft`](https://huggingface.co/Julia569922/qwen2.5-0.5b-rlhf-sft) | Instruction-following baseline |
 | Reward model | [`Julia569922/qwen2.5-0.5b-rlhf-rm`](https://huggingface.co/Julia569922/qwen2.5-0.5b-rlhf-rm) | Score (prompt, response) pairs |
-| PPO policy | [`Julia569922/qwen2.5-0.5b-rlhf-ppo`](https://huggingface.co/Julia569922/qwen2.5-0.5b-rlhf-ppo) | Aligned generation |
+| PPO policy | [`Julia569922/qwen2.5-0.5b-rlhf-ppo`](https://huggingface.co/Julia569922/qwen2.5-0.5b-rlhf-ppo) | Aligned generation (online RLHF) |
+| DPO policy | [`Julia569922/qwen2.5-0.5b-rlhf-dpo`](https://huggingface.co/Julia569922/qwen2.5-0.5b-rlhf-dpo) | Aligned generation (offline preference optimization) |
 
 Quick load (example: PPO adapter):
 
@@ -122,15 +123,18 @@ A single end-to-end run on a consumer GPU. Full numbers, plots, and analysis liv
 | **PPO** | Mean reward (start → end) | 2.24 → **1.93** ↓ |
 | **PPO** | KL divergence (max / mean / final) | 18.7 / 12.4 / 10.1 |
 | **PPO** | Rollout response length increase | **+37%** during training |
+| **DPO** | Loss (start → end, 312 steps) | 0.692 → **0.599** |
+| **DPO** | Pairwise accuracy (start → end) | 0.51 → **0.66** |
+| **DPO** | `rewards/margins` (chosen − rejected) | 0.002 → **0.322** |
 | **Evaluation** | Mean response length, words (base / SFT / PPO) | 83.9 / 99.6 / 99.7 |
 
-The eval-set length numbers look stable (PPO ≈ SFT) but rollout length during training drifted +37%. The two together — flat eval length, drifting rollout length, declining reward — read as **mild reward hacking caught by the KL penalty before it locked into the saved adapter**. See `docs/RESULTS.md` §3.
+**Headline finding (PPO vs DPO at 0.5B scale).** PPO's mean reward *fell* over training and rollout response length grew +37% — a textbook mild reward-hacking signature. DPO, on the same preference data, drove pairwise accuracy from chance (51%) to **66%** with a clean margin growth from 0.002 to 0.322. Same data, same compute budget, different alignment recipe — DPO trained, PPO drifted. This is the canonical compact-scale outcome and the reason most modern alignment work has moved off PPO at this scale. See `docs/RESULTS.md` §3.
 
 ### Training curves
 
-| SFT loss | Reward & length during PPO | KL during PPO |
-|---|---|---|
-| ![SFT loss](outputs/figures/sft_loss.png) | ![PPO reward & length](outputs/figures/ppo_reward_length.png) | ![PPO KL](outputs/figures/ppo_kl.png) |
+| SFT loss | PPO reward & length | PPO KL | DPO training |
+|---|---|---|---|
+| ![SFT loss](outputs/figures/sft_loss.png) | ![PPO reward & length](outputs/figures/ppo_reward_length.png) | ![PPO KL](outputs/figures/ppo_kl.png) | ![DPO training](outputs/figures/dpo_training.png) |
 
 HH-RLHF length distribution (chosen vs rejected) — used to baseline the verbosity analysis:
 

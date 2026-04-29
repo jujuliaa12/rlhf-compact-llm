@@ -54,7 +54,24 @@ There are **three observations that matter** here:
 
 The combination of (1) + (2) + (3) is the canonical **mild reward-hacking + KL-controlled** picture: the policy looked for cheap reward by writing more, but the KL penalty kept it from locking that pattern in.
 
-### 1.4 Evaluation on held-out prompts (Stage 5)
+### 1.4 Direct Preference Optimization (Stage 4, alternative)
+
+| Quantity | Value |
+|---|---|
+| Optimization | TRL `DPOTrainer` + `DPOConfig` (TRL 0.9.6) |
+| Initial policy | SFT adapter merged into the base, fresh LoRA on top |
+| Preference data | `Anthropic/hh-rlhf` (5000 triples) |
+| Steps | 312 (1 epoch) |
+| Loss (start → end) | 0.692 → **0.599** (−13%) |
+| `rewards/margins` (chosen − rejected, start → end) | 0.002 → **0.322** |
+| `rewards/accuracies` (start → end) | 0.512 → **0.663** |
+| `rewards/chosen` (final) | -0.545 |
+| `rewards/rejected` (final) | -0.867 |
+| Hardware / wall-clock | CPU, ~7 h |
+
+The DPO trajectory is what successful preference optimization is supposed to look like: **margin grows by two orders of magnitude**, **pairwise accuracy climbs from chance to ~66%**, and the loss decreases monotonically. Compared to the PPO run on the same preference dataset (which *lost* reward over training and showed length-hacking), DPO's behaviour is qualitatively different — and aligns with the broader literature consensus that DPO is the more robust choice at compact scale.
+
+### 1.5 Evaluation on held-out prompts (Stage 5)
 
 50 held-out prompts, three models compared (base, SFT, PPO). Full responses at `outputs/samples/model_comparison.csv`.
 
@@ -110,7 +127,7 @@ This run only covers HH-RLHF. The pipeline ships a second config (`configs/rewar
 
 Listed in priority order; each item is a real experiment, not a polish task.
 
-1. **DPO baseline.** ✅ *Pipeline shipped.* `scripts/run_dpo.py` + `configs/dpo_qwen.yaml` + `src/dpo_train.py` train a DPO LoRA adapter from the SFT initialisation in a single offline pass — no reward model, no rollout buffer. Run it (`python scripts/run_dpo.py --config configs/dpo_qwen.yaml`) and the SFT vs PPO vs DPO three-way comparison populates this section. Expected outcome at this scale: DPO matches or beats PPO on preference accuracy at a fraction of wall-clock and stability cost.
+1. **DPO baseline.** ✅ *Done* (this run). DPO on the same 5000 preference triples drove pairwise accuracy from 51% → **66%** and margin from 0.002 → **0.322**. PPO, on the same data, *lost* reward and showed +37% rollout length drift. Expected-direction outcome: **DPO is the more robust choice at compact scale**. Adapter at [`Julia569922/qwen2.5-0.5b-rlhf-dpo`](https://huggingface.co/Julia569922/qwen2.5-0.5b-rlhf-dpo).
 2. **Capability benchmarks (alignment tax).** ✅ *Harness shipped.* `scripts/run_capability_eval.py` wraps `lm-evaluation-harness` and runs MMLU / GSM8K across any subset of {base, sft, rm, ppo, dpo}. Outputs land in `outputs/tables/capability_eval.csv`. Quantifying the alignment tax at sub-1B scale is genuinely under-reported — running the full benchmark fills that gap.
 3. **Cross-dataset comparison (Q2).** Re-run reward training on UltraFeedback (`configs/reward_alt.yaml`) and re-run PPO/DPO with the new RM / preference set. Compare RM accuracy, downstream behaviour, and length dynamics.
 4. **Comparison to `Qwen2.5-0.5B-Instruct`.** Without this, claims about RLHF effectiveness are unanchored. Drop the official model into the capability eval registry and re-run.
